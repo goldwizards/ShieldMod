@@ -12,6 +12,11 @@ namespace ShieldMod
         [DefaultValue(true)]
         public bool ShowShieldText;
 
+        [Label("Show red numbers")]
+        [Tooltip("Displays the default red damage numbers when you get hurt.")]
+        [DefaultValue(true)]
+        public bool ShowDamageText;
+
         [Label("How the Shield UI is displayed")]
         [Tooltip("Choose the UI type from the bar or icon method.")]
         [DefaultValue(ShieldUIDisplayStyle.Bar)]
