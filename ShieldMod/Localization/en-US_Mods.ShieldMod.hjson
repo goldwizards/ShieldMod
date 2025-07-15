@@ -1,9 +1,14 @@
 Configs: {
 	ShieldModConfig: {
-		ShowShieldText: {
-			Tooltip: Indicates when the shield absorbs damage.
-			Label: When the shield displays blue numbers
-		}
+                ShowShieldText: {
+                        Tooltip: Indicates when the shield absorbs damage.
+                        Label: When the shield displays blue numbers
+                }
+
+                ShowDamageText: {
+                        Tooltip: Displays vanilla red numbers when you take damage.
+                        Label: Show red damage numbers
+                }
 
 		DisplayName: Shield Mod Config
 

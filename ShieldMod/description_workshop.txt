@@ -2,4 +2,5 @@
 
 
 This mod introduces a dynamic shield system that absorbs incoming damage before HP is affected. The shield regenerates over time and features custom visuals and sounds.
+It also lets you toggle the game's red damage text on or off.
 

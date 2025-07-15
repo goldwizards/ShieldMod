@@ -14,6 +14,9 @@ namespace ShieldMod.Globals
             int damage = (int)modifiers.FinalDamage.Base;
             if (damage <= 0) return;
 
+            if (!ModContent.GetInstance<ShieldModConfig>().ShowDamageText)
+                modifiers.HideCombatText();
+
             if (modPlayer.shield > 0)
             {
                 int absorbed = System.Math.Min(modPlayer.shield, damage);
