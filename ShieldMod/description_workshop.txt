@@ -1,0 +1,5 @@
+당신의 생존력을 한 단계 끌어올릴 보호막 시스템! 최대 체력에 따라 보호막이 생성되며, 피격 시 맞춤 효과와 사운드가 재생됩니다.
+
+
+This mod introduces a dynamic shield system that absorbs incoming damage before HP is affected. The shield regenerates over time and features custom visuals and sounds.
+
