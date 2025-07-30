@@ -51,6 +51,13 @@ namespace ShieldMod.Players
 
         public override void PostUpdate()
         {
+            // Recalculate shield capacity after all effects such as buffs
+            // modify the player's maximum life. This ensures buffs like
+            // Lifeforce potions properly update the shield.
+            maxShield = Player.statLifeMax2;
+            if (shield > maxShield)
+                shield = maxShield;
+
             regenTimer++;
             timeSinceLastHit++;
 
