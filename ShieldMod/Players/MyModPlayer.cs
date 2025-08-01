@@ -35,13 +35,13 @@ namespace ShieldMod.Players
 
         public override void OnRespawn()
         {
+            maxShield = Player.statLifeMax2;
             shield = maxShield;
             shieldBreakCooldown = 0;
         }
 
         public override void ResetEffects()
         {
-            maxShield = Player.statLifeMax2;
             if (shield > maxShield)
                 shield = maxShield;
 
@@ -51,6 +51,25 @@ namespace ShieldMod.Players
 
         public override void PostUpdate()
         {
+            // Recalculate shield capacity after all effects, such as buffs,
+            // modify the player's maximum life. Keep the shield ratio
+            // consistent when the maximum changes.
+            int newMax = Player.statLifeMax2;
+            if (newMax != maxShield)
+            {
+                float ratio = maxShield > 0 ? (float)shield / maxShield : 1f;
+                maxShield = newMax;
+                shield = (int)(maxShield * ratio);
+                if (shield > maxShield)
+                    shield = maxShield;
+            }
+            else
+            {
+                maxShield = newMax;
+                if (shield > maxShield)
+                    shield = maxShield;
+            }
+
             regenTimer++;
             timeSinceLastHit++;
 
