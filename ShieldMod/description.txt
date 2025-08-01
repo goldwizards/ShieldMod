@@ -2,5 +2,5 @@
 
 
 This mod introduces a dynamic shield system that absorbs incoming damage before HP is affected. The shield regenerates over time and features custom visuals and sounds.
-Now the shield's maximum capacity updates whenever your max life changes, such as when using Lifeforce potions.
+Now the shield's capacity scales with any max life changes, so using Lifeforce potions keeps your shield filled in the same proportion as your HP.
 
