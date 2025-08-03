@@ -1,5 +1,9 @@
 당신의 생존력을 한 단계 끌어올릴 보호막 시스템! 최대 체력에 따라 보호막이 생성되며, 피격 시 맞춤 효과와 사운드가 재생됩니다.
 
-
+플레이어가 월드에 입장하거나 부활하면 최대 체력만큼의 보호막이 설정됩니다.
+전투가 없으면 시간이 지날수록 초당 회복량이 1, 2, 3, 5, 8, 12, 20으로 단계적으로 증가해 빠르게 재생됩니다.
+보스가 있는 동안은 회복량이 초당 5 이상으로 오르지 않습니다.
+공격을 받으면 남은 보호막이 우선 손실되고 그만큼 체력이 회복됩니다.
+보호막이 0이 되면 5초의 쿨다운 뒤부터 다시 회복이 시작됩니다.
+UI는 막대나 아이콘 중 선택 가능하며, 흡수된 피해량은 파란 숫자로 표시됩니다.
 This mod introduces a dynamic shield system that absorbs incoming damage before HP is affected. The shield regenerates over time and features custom visuals and sounds.
-
