@@ -1,0 +1,53 @@
+Configs: {
+	ShieldModConfig: {
+		ShowShieldText: {
+			Tooltip: Indicates when the shield absorbs damage.
+			Label: When the shield displays blue numbers
+		}
+
+		DisplayName: Shield Mod Config
+
+		UseIconUI: {
+			Label: Use Icon UI
+			Tooltip: Displays one icon with a pulse effect instead of a bar.
+		}
+
+		UseShieldPulseEffect: {
+			Label: Pulse Animation Effect
+			Tooltip: When the icon UI is on, only one remaining shield will have the pulse animation applied.
+		}
+
+		ShieldUIStyle: {
+			Label: Shield UI Style
+			Tooltip: Choose your UI style from bar or icon style.
+		}
+	}
+
+	ShieldUIDisplayStyle: {
+		Tooltip: ""
+		Bar.Label: Bar UI
+		Icon.Label: Icon UI
+	}
+}
+
+Items: {
+	CoreOfProtection: {
+		DisplayName: Core Of Protection
+		Tooltip: ""
+	}
+
+	EssenceOfProtection: {
+		DisplayName: Essence Of Protection
+		Tooltip: ""
+	}
+
+	FragmentOfProtection: {
+		DisplayName: Fragment Of Protection
+		Tooltip: ""
+	}
+
+	GemOfProtection: {
+		DisplayName: Gem Of Protection
+		Tooltip: ""
+	}
+}
