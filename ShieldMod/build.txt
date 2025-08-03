@@ -1,4 +1,0 @@
-displayName = Shield System
-author = 금마법사
-version = 1.1
-include = Textures/Items/Accessories/
