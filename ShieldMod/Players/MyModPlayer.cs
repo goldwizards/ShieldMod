@@ -29,13 +29,15 @@ namespace ShieldMod.Players
 
         public override void OnEnterWorld()
         {
-            maxShield = Player.statLifeMax2;
+            float ratio = MathHelper.Clamp(ModContent.GetInstance<ShieldModConfig>().ShieldMaxRatio, 0.25f, 1f);
+            maxShield = (int)(Player.statLifeMax2 * ratio);
             shield = maxShield;
         }
 
         public override void OnRespawn()
         {
-            maxShield = Player.statLifeMax2;
+            float ratio = MathHelper.Clamp(ModContent.GetInstance<ShieldModConfig>().ShieldMaxRatio, 0.25f, 1f);
+            maxShield = (int)(Player.statLifeMax2 * ratio);
             shield = maxShield;
             shieldBreakCooldown = 0;
         }
@@ -51,15 +53,15 @@ namespace ShieldMod.Players
 
         public override void PostUpdate()
         {
-            // Recalculate shield capacity after all effects, such as buffs,
-            // modify the player's maximum life. Keep the shield ratio
-            // consistent when the maximum changes.
-            int newMax = Player.statLifeMax2;
+            // 최대 체력 변동을 설정 비율에 맞춰 추적
+            float ratio = MathHelper.Clamp(ModContent.GetInstance<ShieldModConfig>().ShieldMaxRatio, 0.25f, 1f);
+            int newMax = (int)(Player.statLifeMax2 * ratio);
+
             if (newMax != maxShield)
             {
-                float ratio = maxShield > 0 ? (float)shield / maxShield : 1f;
+                float keepRatio = maxShield > 0 ? (float)shield / maxShield : 1f;
                 maxShield = newMax;
-                shield = (int)(maxShield * ratio);
+                shield = (int)(maxShield * keepRatio);
                 if (shield > maxShield)
                     shield = maxShield;
             }
@@ -130,7 +132,7 @@ namespace ShieldMod.Players
                 int absorbed = System.Math.Min(shield, info.Damage);
                 shield -= absorbed;
 
-                SoundEngine.PlaySound(SoundID.Item30 with { Volume = 0.6f }, Player.Center); // 커스텀 사운드
+                SoundEngine.PlaySound(SoundID.Item30 with { Volume = 0.6f }, Player.Center);
 
                 showHitEffect = true;
                 hitEffectTimer = 10;
