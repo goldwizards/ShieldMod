@@ -1,7 +1,0 @@
-{
-  "rootNamespace": "ShieldMod",
-  "fileMap": {
-    "obj\\Debug\\net8.0\\ShieldMod.AssemblyInfo.cs": "ShieldMod.obj.Debug.net8_0",
-    "obj\\Debug\\net8.0\\.NETCoreApp,Version=v8.0.AssemblyAttributes.cs": "ShieldMod.obj.Debug.net8_0"
-  }
-}
