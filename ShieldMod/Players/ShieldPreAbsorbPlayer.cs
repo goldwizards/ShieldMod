@@ -12,11 +12,11 @@ namespace ShieldMod
     /// 요구사항:
     /// 1) 보호막이 전부 막아낸 타격(HP 실제 피해 0)에서는 빨간 데미지 숫자(CombatText)가 뜨지 않게
     /// 2) 보호막이 깨지고 HP에 데미지가 들어가면(remaining > 0) 빨간 숫자는 정상적으로 뜨게
-    /// 3) 완전 흡수(HP 0)도 바닐라와 동일한 i-frame(무적시간)을 받게 (immuneTime/hurtCooldowns를 직접 수정하지 않음)
+    /// 3) 완전 흡수(HP 0)도 바닐라와 동일한 i-frame(무적시간)을 받게 (무적 연장 장신구 효과 포함)
     ///
     /// 구현 방식:
     /// - 완전 흡수는 바닐라 i-frame을 만들기 위해 Hurt가 한 번은 발생해야 하므로 info.Damage=1로 강제
-    /// - PostHurt에서 그 1 데미지를 즉시 복구(실질 HP 감소 0)
+    /// - PostHurt에서 그 1 데미지를 즉시 복구(실질 HP 감소 0) + HP 피격과 동일한 무적시간 보장
     /// - 완전 흡수는 MyModPlayer.SuppressRedDamageText(2)로 혹시 새는 작은 빨간 숫자(1~2)까지 제거
     /// </summary>
     public class ShieldPreAbsorbPlayer : ModPlayer
@@ -154,11 +154,30 @@ namespace ShieldMod
                     _lifeBump = 0;
                 }
 
-                // 3) 무적시간(immuneTime/hurtCooldowns)은 절대 직접 건드리지 않습니다.
-                //    => 바닐라/장신구/버프가 부여한 i-frame이 그대로 유지됩니다.
+                // 3) 무적시간을 "HP 피격과 동일하게" 보장(장신구 보너스 포함)
+                EnforceShieldIFrames();
             }
 
             _fullyAbsorbedFlag = false;
+        }
+
+        private void EnforceShieldIFrames()
+        {
+            // 기본 HP 피격과 동일한 i-frame을 최소한으로 부여
+            // - 바닐라: 40프레임, longInvince(Cross Necklace/Star Veil 등) 시 80프레임
+            int minImmune = Player.longInvince ? 80 : 40;
+
+            if (Player.immuneTime < minImmune)
+                Player.immuneTime = minImmune;
+
+            Player.immune = true;
+
+            int[] cooldowns = Player.hurtCooldowns;
+            for (int i = 0; i < cooldowns.Length; i++)
+            {
+                if (cooldowns[i] < minImmune)
+                    cooldowns[i] = minImmune;
+            }
         }
     }
 }
