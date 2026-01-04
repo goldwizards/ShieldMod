@@ -57,9 +57,11 @@ Items: {
 			'''
 			Deal damage to restore your shield equal to 4% of damage dealt.
 			(Direct hits only; DoT/debuff damage is excluded.)
+			Disables all shield regeneration while equipped.
 
 			"A crimson mark that drinks from your strikes and returns it as a barrier."
 			'''
+	}
 	}
 
 	EmergencyAegis: {
@@ -130,3 +132,4 @@ Buffs: {
 		Description: On cooldown
 	}
 }
+
