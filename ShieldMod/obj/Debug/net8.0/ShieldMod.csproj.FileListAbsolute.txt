@@ -1,0 +1,12 @@
+C:\Users\duswo\OneDrive\문서\My Games\Terraria\tModLoader\ModSources\ShieldMod\bin\Debug\net8.0\ShieldMod.deps.json
+C:\Users\duswo\OneDrive\문서\My Games\Terraria\tModLoader\ModSources\ShieldMod\bin\Debug\net8.0\ShieldMod.dll
+C:\Users\duswo\OneDrive\문서\My Games\Terraria\tModLoader\ModSources\ShieldMod\bin\Debug\net8.0\ShieldMod.pdb
+C:\Users\duswo\OneDrive\문서\My Games\Terraria\tModLoader\ModSources\ShieldMod\obj\Debug\net8.0\ShieldMod.csproj.AssemblyReference.cache
+C:\Users\duswo\OneDrive\문서\My Games\Terraria\tModLoader\ModSources\ShieldMod\obj\Debug\net8.0\ShieldMod.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\duswo\OneDrive\문서\My Games\Terraria\tModLoader\ModSources\ShieldMod\obj\Debug\net8.0\ShieldMod.AssemblyInfoInputs.cache
+C:\Users\duswo\OneDrive\문서\My Games\Terraria\tModLoader\ModSources\ShieldMod\obj\Debug\net8.0\ShieldMod.AssemblyInfo.cs
+C:\Users\duswo\OneDrive\문서\My Games\Terraria\tModLoader\ModSources\ShieldMod\obj\Debug\net8.0\ShieldMod.csproj.CoreCompileInputs.cache
+C:\Users\duswo\OneDrive\문서\My Games\Terraria\tModLoader\ModSources\ShieldMod\obj\Debug\net8.0\ShieldMod.dll
+C:\Users\duswo\OneDrive\문서\My Games\Terraria\tModLoader\ModSources\ShieldMod\obj\Debug\net8.0\refint\ShieldMod.dll
+C:\Users\duswo\OneDrive\문서\My Games\Terraria\tModLoader\ModSources\ShieldMod\obj\Debug\net8.0\ShieldMod.pdb
+C:\Users\duswo\OneDrive\문서\My Games\Terraria\tModLoader\ModSources\ShieldMod\obj\Debug\net8.0\ref\ShieldMod.dll

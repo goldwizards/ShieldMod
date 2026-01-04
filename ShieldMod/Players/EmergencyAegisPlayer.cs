@@ -1,0 +1,159 @@
+using Microsoft.Xna.Framework;
+using Terraria;
+using Terraria.ModLoader;
+using ShieldMod.Buffs;
+
+namespace ShieldMod
+{
+    // 싱글 전용 설계 (멀티 비고려)
+    public class EmergencyAegisPlayer : ModPlayer
+    {
+        public bool HasAegis;
+
+        // === 긴급 3초 회복(HoT) ===
+        private int _aegisHotTicks;   // 남은 틱(최대 180)
+        private int _aegisFrac;       // 분수 누적(분모=180)
+        private int _aegisRateNum;    // 180틱 동안 나눠줄 총량 = 발동 시 '부족량'
+        private int _aegisBudget;     // 총 회복 예산 = 발동 시 '부족량'(피격 시 감소)
+
+        // 처치 회복 ICD(잡몹만 2초)
+        private int _killIcdTicks;
+
+        // 실드 감소 감지(HP 무관)
+        private int _prevShield;
+
+        // 합산 텍스트(보스 25% + 장신구 +20 묶음)
+        private int _healTextSum;
+        private int _healTextTick = -1;
+
+        public override void ResetEffects() => HasAegis = false;
+
+        public override void OnRespawn()
+        {
+            // 300초 쿨타임은 사망 시 초기화
+            Player.ClearBuff(ModContent.BuffType<EmergencyAegisCooldown>());
+
+            // HoT 상태 초기화
+            _aegisHotTicks = 0;
+            _aegisFrac = 0;
+            _aegisBudget = 0;
+        }
+
+        public override void PostUpdate()
+        {
+            var mp = Player.GetModPlayer<MyModPlayer>();
+            if (mp.maxShield <= 0) { _prevShield = 0; return; }
+
+            // 이번 틱 실드 감소량(HP와 무관)
+            int shieldDropThisTick = 0;
+            if (_prevShield > mp.shield)
+                shieldDropThisTick = _prevShield - mp.shield;
+
+            // ----- 긴급 발동: 체력 ≤35% & 쿨없음 -----
+            if (HasAegis
+                && Player.statLife > 0
+                && Player.statLife <= Player.statLifeMax2 * 0.35f
+                && _aegisHotTicks <= 0
+                && !Player.HasBuff(ModContent.BuffType<EmergencyAegisCooldown>()))
+            {
+                _aegisHotTicks = 180; // 3초
+                _aegisFrac = 0;
+
+                // 발동 시 '부족량'만 3초에 걸쳐 회복
+                int missingAtStart = mp.maxShield - mp.shield;
+                _aegisRateNum = missingAtStart; // 180틱 동안 나눠줄 총량
+                _aegisBudget  = missingAtStart; // 총 회복 예산
+                if (_aegisBudget <= 0) _aegisHotTicks = 0;
+
+                // 300초 쿨타임을 디버프 아이콘으로 표시 (사망 시 초기화는 OnRespawn에서 처리)
+                Player.AddBuff(ModContent.BuffType<EmergencyAegisCooldown>(), 300 * 60);
+            }
+
+            // 회복 중 피격: 예산만 줄임(정지 없음) → 끝에 풀까지 못 참
+            if (_aegisHotTicks > 0 && shieldDropThisTick > 0)
+            {
+                _aegisBudget = (_aegisBudget > shieldDropThisTick)
+                    ? (_aegisBudget - shieldDropThisTick) : 0;
+            }
+
+            // ----- 긴급 회복 진행(정지 없음, HoT 텍스트 표시 안 함) -----
+            if (_aegisHotTicks > 0)
+            {
+                _aegisFrac += _aegisRateNum; // 분모=180
+
+                while (_aegisFrac >= 180 && _aegisHotTicks > 0 && _aegisBudget > 0 && mp.shield < mp.maxShield)
+                {
+                    _aegisFrac -= 180;
+                    _aegisBudget--;  // 총량 소모
+                    mp.shield++;     // ← 텍스트 호출 없음(요청 사항)
+                }
+
+                _aegisHotTicks--;
+                if (_aegisBudget <= 0 || mp.shield >= mp.maxShield)
+                {
+                    _aegisHotTicks = 0;
+                    _aegisFrac = 0;
+                }
+            }
+
+            // ----- 처치 회복 ICD -----
+            if (_killIcdTicks > 0) _killIcdTicks--;
+
+            _prevShield = mp.shield; // 다음 틱 비교용
+        }
+
+        // === 잡/보스 처치 힐 진입점(GlobalNPC에서 호출) ===
+        public void TryOnKillHeal(bool isBossKill)
+        {
+            var mp = Player.GetModPlayer<MyModPlayer>();
+            if (!HasAegis || Player.statLife <= 0 || mp.maxShield <= 0) return;
+
+            if (isBossKill)
+            {
+                ApplyShieldHeal(20); // 보스는 ICD 무시
+            }
+            else if (_killIcdTicks <= 0)
+            {
+                ApplyShieldHeal(20);
+                _killIcdTicks = 120; // 2s
+            }
+        }
+
+        private void ApplyShieldHeal(int amount)
+        {
+            var mp = Player.GetModPlayer<MyModPlayer>();
+            int before = mp.shield;
+            int after = before + amount;
+            if (after > mp.maxShield) after = mp.maxShield;
+            int gained = after - before;
+            if (gained <= 0) return;
+
+            mp.shield = after;
+            QueueShieldHealText(gained);
+        }
+
+        // === 합산 텍스트(보스 25% & 처치 +20 묶어서 '다음 프레임' 1번만 출력) ===
+        public void QueueShieldHealText(int amount)
+        {
+            int tick = (int)Main.GameUpdateCount;
+            if (_healTextTick != tick)
+            {
+                _healTextTick = tick;
+                _healTextSum = 0;
+            }
+            _healTextSum += amount;
+        }
+
+        public void FlushShieldHealTextIfAny()
+        {
+            if (_healTextSum > 0 && (int)Main.GameUpdateCount > _healTextTick)
+            {
+                CombatText.NewText(Player.getRect(), Color.Cyan, $"+{_healTextSum}", true);
+                _healTextSum = 0;
+            }
+        }
+
+        // 동적 툴팁 등에서 조회 가능
+        public int KillIcdTicks => _killIcdTicks;
+    }
+}
