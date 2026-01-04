@@ -123,9 +123,13 @@ namespace ShieldMod
 
             // ===== 흡수의 인장: '모든 재생' 차단 =====
             // - 자연 재생 + Emergency Aegis의 기본(+2/s) 재생은 모두 차단
-            // - 단, Absorption(딜의 4%)과 Emergency Aegis의 '긴급 HoT'는 별도 시스템이므로 정상 작동
+            // - Absorption(딜 4%)과 Emergency Aegis의 '긴급 HoT'는 별도 시스템이므로 정상 작동
             if (hasAbsorptionSigil)
             {
+                // 재생이 완전히 멈춘 상태를 유지(가속도/틱 쌓임 방지)
+                regenTimer = 0;
+                timeSinceLastHit = 0; 
+                               
                 // 토큰 누적/잔여가 남아있으면, 인장 해제 순간에 튀어오르는 것 방지
                 _aegisTickAccum = 0;
                 _aegisPending = 0;
@@ -203,3 +207,4 @@ namespace ShieldMod
     }
 
 }
+
