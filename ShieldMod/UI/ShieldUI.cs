@@ -74,6 +74,9 @@ namespace ShieldMod.UI
             string text = $"{shield} / {maxShield}";
             Vector2 textPos = new Vector2(position.X + (barWidth / 2f), position.Y + barHeight + 18f);
             Utils.DrawBorderString(spriteBatch, text, textPos, Color.White, 1f, 0.5f, 0.5f);
+
+            Vector2 regenPos = new Vector2(textPos.X, textPos.Y + 16f);
+            DrawRegenAndCooldownInfo(spriteBatch, regenPos, modPlayer, config, alignLeft: false);
         }
 
         /// <summary>
@@ -219,6 +222,9 @@ namespace ShieldMod.UI
             string text = $"{modPlayer.shield} / {modPlayer.maxShield}";
             Vector2 textPos = new Vector2(startPos.X + 16, startPos.Y + iconCount * spacing + 8);
             Utils.DrawBorderString(spriteBatch, text, textPos, Color.White, 1f, 0.5f, 0.5f);
+
+            Vector2 regenPos = new Vector2(textPos.X, textPos.Y + 16f);
+            DrawRegenAndCooldownInfo(spriteBatch, regenPos, modPlayer, config, alignLeft: true);
         }
 
         // =========================
@@ -229,6 +235,46 @@ namespace ShieldMod.UI
             if (v < min) return min;
             if (v > max) return max;
             return v;
+        }
+
+        private void DrawRegenAndCooldownInfo(SpriteBatch spriteBatch, Vector2 anchor, MyModPlayer modPlayer, ShieldModConfig config, bool alignLeft)
+        {
+            if (!config.ShowRegenCooldownIndicator || !MyModSystem.RegenHintEnabled)
+                return;
+
+            int cooldown = modPlayer.ShieldBreakCooldownTicks;
+            (float natural, float aegis) = modPlayer.GetShieldRegenPerSecond();
+
+            string label;
+            Color color;
+
+            if (cooldown > 0)
+            {
+                label = $"Cooldown {FormatSeconds(cooldown)}";
+                color = new Color(250, 140, 110);
+            }
+            else if (natural <= 0f && aegis <= 0f)
+            {
+                label = "Regen paused";
+                color = Color.LightGray;
+            }
+            else
+            {
+                label = $"Regen {natural:0.#}/s";
+                if (aegis > 0f)
+                    label += $" (+{aegis:0.#})";
+
+                float k = MathHelper.Clamp(natural / 12f, 0f, 1f);
+                color = Color.Lerp(new Color(120, 190, 255), new Color(70, 230, 255), k);
+            }
+
+            float scale = 0.85f;
+            Utils.DrawBorderString(spriteBatch, label, anchor, color, scale, alignLeft ? 0f : 0.5f, 0f);
+        }
+
+        private static string FormatSeconds(int ticks)
+        {
+            return $"{(ticks / 60f):0.0}s";
         }
     }
 }

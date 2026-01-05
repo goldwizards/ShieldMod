@@ -17,6 +17,7 @@ namespace ShieldMod
         internal ShieldUI shieldUI;
 
         public static Texture2D PixelTexture;
+        internal static bool RegenHintEnabled = true;
 
         // ■ 커스텀 레시피 그룹 등록 (은/텅스텐, 데모/크림테인)
         public override void AddRecipeGroups()
@@ -44,6 +45,16 @@ namespace ShieldMod
             }
         }
 
+        public override void OnWorldLoad()
+        {
+            RegenHintEnabled = ModContent.GetInstance<ShieldModConfig>().ShowRegenCooldownIndicator;
+        }
+
+        public override void OnWorldUnload()
+        {
+            RegenHintEnabled = true;
+        }
+
         public override void UpdateUI(GameTime gameTime)
         {
             shieldInterface?.Update(gameTime);
@@ -57,6 +68,13 @@ namespace ShieldMod
 
             Player p = Main.LocalPlayer;
             if (p == null || !p.active) return;
+
+            if (ShieldMod.ToggleRegenHintKeybind != null && ShieldMod.ToggleRegenHintKeybind.JustPressed)
+            {
+                RegenHintEnabled = !RegenHintEnabled;
+                string text = RegenHintEnabled ? "Shield regen HUD: ON" : "Shield regen HUD: OFF";
+                Main.NewText(text, new Color(100, 200, 255));
+            }
 
             var mp = p.GetModPlayer<MyModPlayer>();
             if (mp == null || mp.suppressRedDamageTextTicks <= 0) return;

@@ -15,6 +15,18 @@ namespace ShieldMod
             ShieldHealText
         }
 
+        public static ModKeybind ToggleRegenHintKeybind;
+
+        public override void Load()
+        {
+            ToggleRegenHintKeybind = KeybindLoader.RegisterKeybind(this, "Toggle Shield Regen HUD", "K");
+        }
+
+        public override void Unload()
+        {
+            ToggleRegenHintKeybind = null;
+        }
+
         public override void HandlePacket(BinaryReader reader, int whoAmI)
         {
             Msg msg = (Msg)reader.ReadByte();
