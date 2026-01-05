@@ -120,7 +120,8 @@ namespace ShieldMod
         public override void PostUpdate()
         {
             bool hasAegis = Player.GetModPlayer<EmergencyAegisPlayer>().HasAegis;
-            bool hasAbsorptionSigil = Player.GetModPlayer<AbsorptionSigilPlayer>().HasAbsorptionSigil;
+            var absorption = Player.GetModPlayer<AbsorptionSigilPlayer>();
+            bool hasAbsorptionSigil = absorption.HasAbsorptionSigil;
 
             if (suppressRedDamageTextTicks > 0)
                 suppressRedDamageTextTicks--;
@@ -166,31 +167,26 @@ namespace ShieldMod
             }
 
             // 쿨다운 중에는 자연 재생/보너스 재생 둘 다 정지
+            // ===== 보호막 파괴 페널티 기간 =====
             if (shieldBreakCooldown > 0)
             {
                 shieldBreakCooldown--;
+
+                // 흡수 페널티가 겹칠 때 자연 재생은 더 강하게 억제(피드백: 자연 회복 상한 완화)
+                if (hasAbsorptionSigil && absorption.IsSiphonPenaltyActive && shield < maxShield)
+                {
+                    regenTimer = 0;
+                    timeSinceLastHit = 0;
+                }
+
                 NetMaybeSync();
                 return;
             }
 
-            // ===== 흡수의 인장: '모든 재생' 차단 =====
-            // - 자연 재생 + Emergency Aegis의 기본(+2/s) 재생은 모두 차단
-            // - Absorption(딜 4%)과 Emergency Aegis의 '긴급 HoT'는 별도 시스템이므로 정상 작동
-            if (hasAbsorptionSigil)
-            {
-                // 재생이 완전히 멈춘 상태를 유지(가속도/틱 쌓임 방지)
-                regenTimer = 0;
-                timeSinceLastHit = 0; 
-                               
-                // 토큰 누적/잔여가 남아있으면, 인장 해제 순간에 튀어오르는 것 방지
-                _aegisTickAccum = 0;
-                _aegisPending = 0;
-                NetMaybeSync();
-                return;
-            }
+            float naturalRegenMultiplier = hasAbsorptionSigil ? 0.5f : 1f;
 
             // ===== 기본 자연 재생 로직(원본 유지) =====
-            float regenPerSecond = CalculateNaturalRegenPerSecond();
+            float regenPerSecond = CalculateNaturalRegenPerSecond() * naturalRegenMultiplier;
 
             int interval = (int)(60f / regenPerSecond);
             if (regenPerSecond > 0f && interval > 0 && regenTimer % interval == 0 && shield < maxShield)
@@ -279,13 +275,16 @@ namespace ShieldMod
 
         public (float naturalRegenPerSecond, float aegisRegenPerSecond) GetShieldRegenPerSecond()
         {
-            bool hasAbsorptionSigil = Player.GetModPlayer<AbsorptionSigilPlayer>().HasAbsorptionSigil;
+            var absorption = Player.GetModPlayer<AbsorptionSigilPlayer>();
+            bool hasAbsorptionSigil = absorption.HasAbsorptionSigil;
             bool hasAegis = Player.GetModPlayer<EmergencyAegisPlayer>().HasAegis;
 
-            if (shieldBreakCooldown > 0 || hasAbsorptionSigil || shield >= maxShield)
+            if (shieldBreakCooldown > 0 || shield >= maxShield)
                 return (0f, 0f);
 
             float natural = CalculateNaturalRegenPerSecond();
+            if (hasAbsorptionSigil)
+                natural *= 0.5f;
             float aegis = 0f;
 
             if (hasAegis && Player.statLife > 0 && shield < maxShield)
