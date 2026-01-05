@@ -108,6 +108,16 @@ Configs: {
 			Label: Electric effect (bar)
 			Tooltip: Draws an electric/lightning animation inside the filled part of the bar UI.
 		}
+
+		ShieldHitColor: {
+			Label: Shield hit effect color
+			Tooltip: Color used for the shield hit overlay and absorb text.
+		}
+
+		ShieldRegenColor: {
+			Label: Shield regen effect color
+			Tooltip: Color used for shield heal text effects.
+		}
 	}
 
 	ShieldUIDisplayStyle: {
