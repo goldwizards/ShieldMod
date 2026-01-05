@@ -44,11 +44,13 @@ namespace ShieldMod.Layers
             Texture2D tex = _hitTex.Value;
             Vector2 origin = tex.Size() * 0.5f;
 
+            Color hitColor = ModContent.GetInstance<ShieldModConfig>().ShieldHitColor;
+
             drawInfo.DrawDataCache.Add(new DrawData(
                 tex,
                 pos,
                 null,
-                Color.Cyan * alpha,      // Cyan 페이드
+                hitColor * alpha,
                 0f,
                 origin,
                 scale,

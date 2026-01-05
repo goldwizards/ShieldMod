@@ -76,7 +76,10 @@ namespace ShieldMod
                     {
                         Player p = Main.player[playerId];
                         if (p != null && p.active)
-                            CombatText.NewText(p.getRect(), Color.Cyan, $"+{healAmount}", true);
+                        {
+                            Color regenColor = ModContent.GetInstance<ShieldModConfig>().ShieldRegenColor;
+                            CombatText.NewText(p.getRect(), regenColor, $"+{healAmount}", true);
+                        }
                     }
                     break;
                 }
