@@ -27,7 +27,21 @@ namespace ShieldMod
         private int _healTextSum;
         private int _healTextTick = -1;
 
+        // === 멀티 동기화 ===
+        private int _netHotTicks;
+        private int _netHotFrac;
+        private int _netHotRateNum;
+        private int _netHotBudget;
+        private int _netCooldownTime;
+        private int _netSyncTimer;
+
         public override void ResetEffects() => HasAegis = false;
+
+        public override void OnEnterWorld()
+        {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                RequestAegisHotSync();
+        }
 
         public override void OnRespawn()
         {
@@ -38,6 +52,10 @@ namespace ShieldMod
             _aegisHotTicks = 0;
             _aegisFrac = 0;
             _aegisBudget = 0;
+            _aegisRateNum = 0;
+
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                RequestAegisHotSync();
         }
 
         public override void PostUpdate()
@@ -56,7 +74,8 @@ namespace ShieldMod
                 shieldDropThisTick = _prevShield - mp.shield;
 
             // ----- 긴급 발동: 체력 ≤35% & 쿨없음 -----
-            if (HasAegis
+            if (serverAuth
+                && HasAegis
                 && Player.statLife > 0
                 && Player.statLife <= Player.statLifeMax2 * 0.35f
                 && mp.shield <= 0 // ✅ 추가 조건: 보호막이 0 이하일 때만
@@ -83,8 +102,12 @@ namespace ShieldMod
             // 회복 중 피격: 예산만 줄임(정지 없음) → 끝에 풀까지 못 참
             if (_aegisHotTicks > 0 && shieldDropThisTick > 0)
             {
-                _aegisBudget = (_aegisBudget > shieldDropThisTick)
+                int budgetAfterHit = (_aegisBudget > shieldDropThisTick)
                     ? (_aegisBudget - shieldDropThisTick) : 0;
+                if (serverAuth || Main.netMode == NetmodeID.SinglePlayer)
+                    _aegisBudget = budgetAfterHit;
+                else
+                    _aegisBudget = budgetAfterHit; // 표시/예측용 소비(서버가 주기적으로 재동기화)
             }
 
             // ----- 긴급 회복 진행(정지 없음, HoT 텍스트 표시 안 함) -----
@@ -96,7 +119,15 @@ namespace ShieldMod
                 {
                     _aegisFrac -= 180;
                     _aegisBudget--;  // 총량 소모
-                    mp.shield++;     // ← 텍스트 호출 없음(요청 사항)
+                    if (serverAuth || Main.netMode == NetmodeID.SinglePlayer)
+                    {
+                        mp.shield++;     // ← 텍스트 호출 없음(요청 사항)
+                    }
+                    else
+                    {
+                        // 표시/예측용으로만 증가(서버 SyncPlayerShield가 주기적으로 덮어씀)
+                        mp.shield++;
+                    }
                 }
 
                 _aegisHotTicks--;
@@ -104,6 +135,8 @@ namespace ShieldMod
                 {
                     _aegisHotTicks = 0;
                     _aegisFrac = 0;
+                    _aegisRateNum = 0;
+                    if (_aegisBudget < 0) _aegisBudget = 0;
                 }
             }
 
@@ -111,6 +144,7 @@ namespace ShieldMod
             if (_killIcdTicks > 0) _killIcdTicks--;
 
             _prevShield = mp.shield; // 다음 틱 비교용
+            NetMaybeSyncAegisHot();
         }
 
         // === 잡/보스 처치 힐 진입점(GlobalNPC에서 호출) ===
@@ -178,5 +212,92 @@ namespace ShieldMod
 
         // 동적 툴팁 등에서 조회 가능
         public int KillIcdTicks => _killIcdTicks;
+
+        private int GetCooldownTime()
+        {
+            int buffType = ModContent.BuffType<EmergencyAegisCooldown>();
+            int idx = Player.FindBuffIndex(buffType);
+            return idx >= 0 ? Player.buffTime[idx] : 0;
+        }
+
+        private void RequestAegisHotSync()
+        {
+            if (Main.netMode != NetmodeID.MultiplayerClient)
+                return;
+
+            ModPacket packet = Mod.GetPacket();
+            packet.Write((byte)ShieldMod.Msg.RequestAegisHot);
+            packet.Write((byte)Player.whoAmI);
+            packet.Send();
+        }
+
+        private void NetMaybeSyncAegisHot()
+        {
+            if (Main.netMode != NetmodeID.Server)
+                return;
+
+            _netSyncTimer++;
+            int cooldown = GetCooldownTime();
+
+            bool changed = _aegisHotTicks != _netHotTicks
+                || _aegisFrac != _netHotFrac
+                || _aegisRateNum != _netHotRateNum
+                || _aegisBudget != _netHotBudget
+                || cooldown != _netCooldownTime;
+
+            if (!changed && _netSyncTimer < 10)
+                return;
+
+            _netSyncTimer = 0;
+            _netHotTicks = _aegisHotTicks;
+            _netHotFrac = _aegisFrac;
+            _netHotRateNum = _aegisRateNum;
+            _netHotBudget = _aegisBudget;
+            _netCooldownTime = cooldown;
+
+            NetSendAegisHot(-1);
+        }
+
+        internal void NetSendAegisHot(int toWho)
+        {
+            if (Main.netMode != NetmodeID.Server)
+                return;
+
+            ModPacket packet = Mod.GetPacket();
+            packet.Write((byte)ShieldMod.Msg.SyncAegisHot);
+            packet.Write((byte)Player.whoAmI);
+            packet.Write(_aegisHotTicks);
+            packet.Write(_aegisFrac);
+            packet.Write(_aegisRateNum);
+            packet.Write(_aegisBudget);
+            packet.Write(GetCooldownTime());
+            packet.Send(toWho, -1);
+        }
+
+        internal void NetReceiveAegisHot(int hotTicks, int hotFrac, int hotRateNum, int hotBudget, int cooldownTime)
+        {
+            _aegisHotTicks = hotTicks;
+            _aegisFrac = hotFrac;
+            _aegisRateNum = hotRateNum;
+            _aegisBudget = hotBudget;
+
+            int buffType = ModContent.BuffType<EmergencyAegisCooldown>();
+            int idx = Player.FindBuffIndex(buffType);
+            if (cooldownTime > 0)
+            {
+                if (idx < 0)
+                {
+                    Player.AddBuff(buffType, cooldownTime);
+                }
+                else
+                {
+                    Player.buffTime[idx] = cooldownTime;
+                }
+            }
+            else if (idx >= 0)
+            {
+                Player.DelBuff(idx);
+            }
+        }
     }
 }

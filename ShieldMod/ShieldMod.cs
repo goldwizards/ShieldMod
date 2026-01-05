@@ -12,7 +12,9 @@ namespace ShieldMod
         {
             SyncPlayerShield,
             RequestShieldSync,
-            ShieldHealText
+            ShieldHealText,
+            SyncAegisHot,
+            RequestAegisHot
         }
 
         public override void HandlePacket(BinaryReader reader, int whoAmI)
@@ -75,6 +77,39 @@ namespace ShieldMod
                         Player p = Main.player[playerId];
                         if (p != null && p.active)
                             CombatText.NewText(p.getRect(), Color.Cyan, $"+{healAmount}", true);
+                    }
+                    break;
+                }
+
+                case Msg.SyncAegisHot:
+                {
+                    byte playerId = reader.ReadByte();
+                    int hotTicks = reader.ReadInt32();
+                    int hotFrac = reader.ReadInt32();
+                    int hotRateNum = reader.ReadInt32();
+                    int hotBudget = reader.ReadInt32();
+                    int cooldownTime = reader.ReadInt32();
+
+                    if (playerId < Main.maxPlayers)
+                    {
+                        Player p = Main.player[playerId];
+                        if (p != null && p.active)
+                            p.GetModPlayer<EmergencyAegisPlayer>()?.NetReceiveAegisHot(hotTicks, hotFrac, hotRateNum, hotBudget, cooldownTime);
+                    }
+                    break;
+                }
+
+                case Msg.RequestAegisHot:
+                {
+                    if (Main.netMode != NetmodeID.Server)
+                        break;
+
+                    byte playerId = reader.ReadByte();
+                    if (playerId < Main.maxPlayers)
+                    {
+                        Player p = Main.player[playerId];
+                        if (p != null && p.active)
+                            p.GetModPlayer<EmergencyAegisPlayer>()?.NetSendAegisHot(whoAmI);
                     }
                     break;
                 }
