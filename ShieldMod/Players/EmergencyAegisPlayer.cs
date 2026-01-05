@@ -160,7 +160,18 @@ namespace ShieldMod
         {
             if (_healTextSum > 0 && (int)Main.GameUpdateCount > _healTextTick)
             {
-                CombatText.NewText(Player.getRect(), Color.Cyan, $"+{_healTextSum}", true);
+                if (Main.netMode == NetmodeID.Server)
+                {
+                    ModPacket packet = Mod.GetPacket();
+                    packet.Write((byte)ShieldMod.Msg.ShieldHealText);
+                    packet.Write((byte)Player.whoAmI);
+                    packet.Write(_healTextSum);
+                    packet.Send(-1, -1);
+                }
+                else
+                {
+                    CombatText.NewText(Player.getRect(), Color.Cyan, $"+{_healTextSum}", true);
+                }
                 _healTextSum = 0;
             }
         }

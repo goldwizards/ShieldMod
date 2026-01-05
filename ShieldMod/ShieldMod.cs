@@ -1,4 +1,5 @@
 using System.IO;
+using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -10,7 +11,8 @@ namespace ShieldMod
         internal enum Msg : byte
         {
             SyncPlayerShield,
-            RequestShieldSync
+            RequestShieldSync,
+            ShieldHealText
         }
 
         public override void HandlePacket(BinaryReader reader, int whoAmI)
@@ -54,6 +56,25 @@ namespace ShieldMod
                         Player p = Main.player[i];
                         if (p != null && p.active)
                             p.GetModPlayer<MyModPlayer>().NetSendShield(toWho);
+                    }
+                    break;
+                }
+
+                case Msg.ShieldHealText:
+                {
+                    if (Main.netMode == NetmodeID.Server)
+                        break;
+
+                    byte playerId = reader.ReadByte();
+                    int healAmount = reader.ReadInt32();
+                    if (healAmount <= 0)
+                        break;
+
+                    if (playerId < Main.maxPlayers)
+                    {
+                        Player p = Main.player[playerId];
+                        if (p != null && p.active)
+                            CombatText.NewText(p.getRect(), Color.Cyan, $"+{healAmount}", true);
                     }
                     break;
                 }
