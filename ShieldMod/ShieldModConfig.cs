@@ -1,5 +1,6 @@
-using Terraria.ModLoader.Config;
+using Microsoft.Xna.Framework;
 using System.ComponentModel;
+using Terraria.ModLoader.Config;
 
 namespace ShieldMod
 {
@@ -32,6 +33,16 @@ namespace ShieldMod
         [Tooltip("Displays your current shield regeneration tier (1/2/3/5/8/12/20 per second) or break cooldown as a small HUD label.")]
         [DefaultValue(true)]
         public bool ShowRegenCooldownIndicator;
+
+        [Label("Shield hit effect color")]
+        [Tooltip("Color used for the shield hit overlay and absorb text (default: blue).")]
+        [DefaultValue(typeof(Color), "30, 144, 255, 255")]
+        public Color ShieldHitColor { get; set; } = Color.DodgerBlue;
+
+        [Label("Shield regen effect color")]
+        [Tooltip("Color used for shield heal text effects.")]
+        [DefaultValue(typeof(Color), "0, 255, 255, 255")]
+        public Color ShieldRegenColor { get; set; } = Color.Cyan;
 
         [Label("Shield Max Health Ratio")]
         [Tooltip("Set the maximum shield as a percentage of the player's max health (statLifeMax2).\nExample: 1.00 = 100%, 0.25 = 25%")]

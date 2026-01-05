@@ -107,7 +107,10 @@ namespace ShieldMod
             SpawnShieldImpactDust(_queuedAbsorb, _queuedStrong);
 
             if (ModContent.GetInstance<ShieldModConfig>().ShowShieldText && !Main.dedServ)
-                CombatText.NewText(Player.Hitbox, Color.DodgerBlue, "-" + _queuedAbsorb);
+            {
+                Color hitColor = ModContent.GetInstance<ShieldModConfig>().ShieldHitColor;
+                CombatText.NewText(Player.Hitbox, hitColor, "-" + _queuedAbsorb);
+            }
 
             _queuedAbsorb = 0;
             _queuedStrong = false;

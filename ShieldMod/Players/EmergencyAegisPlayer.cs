@@ -204,7 +204,8 @@ namespace ShieldMod
                 }
                 else
                 {
-                    CombatText.NewText(Player.getRect(), Color.Cyan, $"+{_healTextSum}", true);
+                    Color regenColor = ModContent.GetInstance<ShieldModConfig>().ShieldRegenColor;
+                    CombatText.NewText(Player.getRect(), regenColor, $"+{_healTextSum}", true);
                 }
                 _healTextSum = 0;
             }
