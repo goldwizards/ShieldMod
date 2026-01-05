@@ -1,4 +1,5 @@
 using Terraria;
+using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace ShieldMod.Globals
@@ -9,6 +10,7 @@ namespace ShieldMod.Globals
 
         public override void OnKill(NPC npc)
         {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
             // 보스 또는 세그먼트 보스의 마스터만 처리
             bool isBoss = npc.boss || (npc.realLife >= 0 && Main.npc[npc.realLife].boss);
             if (!isBoss) return;

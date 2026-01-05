@@ -1,4 +1,5 @@
 using Terraria;
+using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace ShieldMod
@@ -81,6 +82,7 @@ namespace ShieldMod
 
         private void TryHealShieldFromDamage(NPC target, int damageDone)
         {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
             if (!HasAbsorptionSigil || damageDone <= 0 || Player.statLife <= 0)
                 return;
 

@@ -130,6 +130,65 @@ namespace ShieldMod
                     },
                     InterfaceScaleType.UI));
             }
+
+            // ✅ 타인(다른 유저) 남은 보호막 확인: 머리 위 체력바 스타일로 2px 보호막 라인 표시
+            // - 바닐라 Entity Health Bars 이후에 그려서, 체력바/이름 표시와 겹침이 덜합니다.
+            int hb = layers.FindIndex(layer => layer.Name == "Vanilla: Entity Health Bars");
+            if (hb != -1)
+            {
+                layers.Insert(hb + 1, new LegacyGameInterfaceLayer(
+                    "ShieldMod: Player Shield Overhead",
+                    delegate
+                    {
+                        DrawOtherPlayerShieldLine(Main.spriteBatch);
+                        return true;
+                    },
+                    InterfaceScaleType.UI));
+            }
+        }
+
+        private static void DrawOtherPlayerShieldLine(SpriteBatch spriteBatch)
+        {
+            if (Main.dedServ) return;
+
+            Player local = Main.LocalPlayer;
+            if (local == null || !local.active) return;
+
+            // 화면 난잡함 방지: 너무 멀면 안 그림(필요 시 값 조정)
+            const float maxDistSq = 1800f * 1800f;
+
+            for (int i = 0; i < Main.maxPlayers; i++)
+            {
+                Player p = Main.player[i];
+                if (p == null || !p.active || p.dead) continue;
+                if (i == Main.myPlayer) continue; // 내 UI는 기존 ShieldUI가 있으니 제외
+
+                // 거리 제한
+                if (Vector2.DistanceSquared(p.Center, local.Center) > maxDistSq) continue;
+
+                var mp = p.GetModPlayer<MyModPlayer>();
+                if (mp == null || mp.maxShield <= 0) continue;
+                if (mp.shield <= 0) continue;
+                if (mp.shield >= mp.maxShield) continue; // ✅ 풀일 때 숨김
+
+                float frac = mp.maxShield > 0 ? (mp.shield / (float)mp.maxShield) : 0f;
+                frac = MathHelper.Clamp(frac, 0f, 1f);
+
+                // 위치: 머리 위(바닐라 체력바가 뜨는 위치 근처)
+                Vector2 pos = p.Top - Main.screenPosition;
+                pos.Y -= 18f; // 체력바 기준으로 2px 위쪽 느낌
+
+                const int w = 46;
+                const int h = 2; // ✅ 요청: 2px
+
+                int x = (int)(pos.X - w * 0.5f);
+                int y = (int)pos.Y;
+
+                // 배경(얇게)
+                spriteBatch.Draw(PixelTexture, new Rectangle(x, y, w, h), Color.Black * 0.55f);
+                // 채움(파랑)
+                spriteBatch.Draw(PixelTexture, new Rectangle(x, y, (int)(w * frac), h), new Color(60, 170, 255) * 0.95f);
+            }
         }
 
         public override void Unload()

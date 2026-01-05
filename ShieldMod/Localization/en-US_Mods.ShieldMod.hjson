@@ -62,7 +62,6 @@ Items: {
 			"A crimson mark that drinks from your strikes and returns it as a barrier."
 			'''
 	}
-	}
 
 	EmergencyAegis: {
 		DisplayName: Emergency Aegis
@@ -124,6 +123,20 @@ Configs: {
 			Tooltip: ""
 		}
 	}
+
+	ShieldModServerConfig: {
+		DisplayName: Shield Mod Server Config
+
+		ShieldMaxRatio: {
+			Label: Shield Max Health Ratio (Server)
+			Tooltip:
+				'''
+				Multiplayer only: Server-authoritative maximum shield ratio.
+				Set maximum shield as a percentage of the player's max health (statLifeMax2).
+				Example: 1.00 = 100%, 0.25 = 25%
+				'''
+		}
+	}
 }
 
 Buffs: {
@@ -132,4 +145,3 @@ Buffs: {
 		Description: On cooldown
 	}
 }
-

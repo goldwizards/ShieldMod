@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace ShieldMod
@@ -54,17 +55,46 @@ namespace ShieldMod
         private int _aegisTickAccum;   // 생성 누적기
         private int _aegisPending;     // 소비 대기 토큰(= +1 회복)
 
+        // === 멀티 동기화 ===
+        private int _netSyncTick;
+        private int _netLastShield;
+        private int _netLastMax;
+        private int _netLastBreakCd;
+        private int _netLastTimeSinceHit;
+
+        private static float GetShieldMaxRatio()
+        {
+            // 멀티에서는 서버 설정을 권위로 사용합니다.
+            if (Main.netMode == NetmodeID.Server)
+                return MathHelper.Clamp(ModContent.GetInstance<ShieldModServerConfig>().ShieldMaxRatio, 0.25f, 1f);
+
+            return MathHelper.Clamp(ModContent.GetInstance<ShieldModConfig>().ShieldMaxRatio, 0.25f, 1f);
+        }
+
         public override void OnEnterWorld()
         {
-            // 설정은 건드리지 않되, 기존 로직 그대로 사용
-            float ratio = MathHelper.Clamp(ModContent.GetInstance<ShieldModConfig>().ShieldMaxRatio, 0.25f, 1f);
+            // 싱글/서버: 설정값으로 초기화
+            // 클라는 서버에서 Sync를 받기 전까지 임시값을 넣되, 서버에 즉시 동기화를 요청합니다.
+            float ratio = GetShieldMaxRatio();
             maxShield = (int)(Player.statLifeMax2 * ratio);
             shield = maxShield;
+
+            _netLastShield = shield;
+            _netLastMax = maxShield;
+            _netLastBreakCd = shieldBreakCooldown;
+            _netLastTimeSinceHit = timeSinceLastHit;
+
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+            {
+                ModPacket packet = Mod.GetPacket();
+                packet.Write((byte)ShieldMod.Msg.RequestShieldSync);
+                packet.Send();
+            }
         }
 
         public override void OnRespawn()
         {
-            float ratio = MathHelper.Clamp(ModContent.GetInstance<ShieldModConfig>().ShieldMaxRatio, 0.25f, 1f);
+            float ratio = GetShieldMaxRatio();
             maxShield = (int)(Player.statLifeMax2 * ratio);
             shield = maxShield;
             shieldBreakCooldown = 0;
@@ -72,6 +102,10 @@ namespace ShieldMod
             // Aegis 보너스 재생 상태 초기화
             _aegisTickAccum = 0;
             _aegisPending = 0;
+
+            // 리스폰 직후 서버가 값 갱신을 즉시 퍼뜨리도록
+            if (Main.netMode == NetmodeID.Server)
+                NetSendShield(-1);
         }
 
         public override void ResetEffects()
@@ -89,20 +123,35 @@ namespace ShieldMod
             if (suppressRedDamageTextTicks > 0)
                 suppressRedDamageTextTicks--;
 
-            // 최대치 재계산(원본 유지)
-            float ratio = MathHelper.Clamp(ModContent.GetInstance<ShieldModConfig>().ShieldMaxRatio, 0.25f, 1f);
-            int newMax = (int)(Player.statLifeMax2 * ratio);
-            if (newMax != maxShield)
+            // 최대치 재계산:
+            // - 싱글/서버에서는 설정값으로 재계산
+            // - 멀티 클라에서는 서버에서 Sync된 maxShield를 우선(로컬 설정으로 흔들리지 않게)
+            if (Main.netMode != NetmodeID.MultiplayerClient)
             {
-                float keepRatio = maxShield > 0 ? (float)shield / maxShield : 1f;
-                maxShield = newMax;
-                shield = (int)(maxShield * keepRatio);
-                if (shield > maxShield) shield = maxShield;
+                float ratio = GetShieldMaxRatio();
+                int newMax = (int)(Player.statLifeMax2 * ratio);
+                if (newMax != maxShield)
+                {
+                    float keepRatio = maxShield > 0 ? (float)shield / maxShield : 1f;
+                    maxShield = newMax;
+                    shield = (int)(maxShield * keepRatio);
+                    if (shield > maxShield) shield = maxShield;
+                }
+                else
+                {
+                    maxShield = newMax;
+                    if (shield > maxShield) shield = maxShield;
+                }
             }
             else
             {
-                maxShield = newMax;
-                if (shield > maxShield) shield = maxShield;
+                // 클라에서 maxShield가 0이라 UI가 완전히 죽는 걸 방지하는 최소 안전장치
+                if (maxShield <= 0)
+                {
+                    float ratio = MathHelper.Clamp(ModContent.GetInstance<ShieldModConfig>().ShieldMaxRatio, 0.25f, 1f);
+                    maxShield = (int)(Player.statLifeMax2 * ratio);
+                    if (shield > maxShield) shield = maxShield;
+                }
             }
 
             regenTimer++;
@@ -118,6 +167,7 @@ namespace ShieldMod
             if (shieldBreakCooldown > 0)
             {
                 shieldBreakCooldown--;
+                NetMaybeSync();
                 return;
             }
 
@@ -133,6 +183,7 @@ namespace ShieldMod
                 // 토큰 누적/잔여가 남아있으면, 인장 해제 순간에 튀어오르는 것 방지
                 _aegisTickAccum = 0;
                 _aegisPending = 0;
+                NetMaybeSync();
                 return;
             }
 
@@ -195,6 +246,46 @@ namespace ShieldMod
                     _aegisPending = 0;
                 }
             }
+
+            NetMaybeSync();
+        }
+
+        private void NetMaybeSync()
+        {
+            if (Main.netMode != NetmodeID.Server)
+                return;
+
+            // 10틱마다, 혹은 값 변경 시 바로 전파
+            _netSyncTick++;
+            bool changed = shield != _netLastShield
+                || maxShield != _netLastMax
+                || shieldBreakCooldown != _netLastBreakCd
+                || timeSinceLastHit != _netLastTimeSinceHit;
+
+            if (changed || _netSyncTick >= 10)
+            {
+                _netSyncTick = 0;
+                _netLastShield = shield;
+                _netLastMax = maxShield;
+                _netLastBreakCd = shieldBreakCooldown;
+                _netLastTimeSinceHit = timeSinceLastHit;
+                NetSendShield(-1);
+            }
+        }
+
+        internal void NetSendShield(int toWho)
+        {
+            if (Main.netMode != NetmodeID.Server)
+                return;
+
+            ModPacket packet = Mod.GetPacket();
+            packet.Write((byte)ShieldMod.Msg.SyncPlayerShield);
+            packet.Write((byte)Player.whoAmI);
+            packet.Write(shield);
+            packet.Write(maxShield);
+            packet.Write(shieldBreakCooldown);
+            packet.Write(timeSinceLastHit);
+            packet.Send(toWho, -1);
         }
 
         public override void PostHurt(Player.HurtInfo info)

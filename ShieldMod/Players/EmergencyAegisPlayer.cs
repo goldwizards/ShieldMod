@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.ID;
 using Terraria.ModLoader;
 using ShieldMod.Buffs;
 
@@ -44,6 +45,11 @@ namespace ShieldMod
             var mp = Player.GetModPlayer<MyModPlayer>();
             if (mp.maxShield <= 0) { _prevShield = 0; return; }
 
+            // 멀티에서는 서버 권위 값이 주기적으로 Sync됩니다.
+            // 긴급 HoT/처치회복 로직은 클라에서도 "표시" 상 문제를 만들지 않지만,
+            // 중복 실행을 피하기 위해 최소한의 가드만 둡니다(서버에서만 쿨/예산을 확정).
+            bool serverAuth = Main.netMode != NetmodeID.MultiplayerClient;
+
             // 이번 틱 실드 감소량(HP와 무관)
             int shieldDropThisTick = 0;
             if (_prevShield > mp.shield)
@@ -53,6 +59,7 @@ namespace ShieldMod
             if (HasAegis
                 && Player.statLife > 0
                 && Player.statLife <= Player.statLifeMax2 * 0.35f
+                && mp.shield <= 0 // ✅ 추가 조건: 보호막이 0 이하일 때만
                 && _aegisHotTicks <= 0
                 && !Player.HasBuff(ModContent.BuffType<EmergencyAegisCooldown>()))
             {
@@ -65,8 +72,12 @@ namespace ShieldMod
                 _aegisBudget  = missingAtStart; // 총 회복 예산
                 if (_aegisBudget <= 0) _aegisHotTicks = 0;
 
-                // 300초 쿨타임을 디버프 아이콘으로 표시 (사망 시 초기화는 OnRespawn에서 처리)
-                Player.AddBuff(ModContent.BuffType<EmergencyAegisCooldown>(), 300 * 60);
+                // ✅ "회복할 게 없으면 쿨만 소비" 방지: 예산이 있을 때만 쿨 부여
+                if (_aegisHotTicks > 0 && _aegisBudget > 0 && serverAuth)
+                {
+                    // 300초 쿨타임을 디버프 아이콘으로 표시 (사망 시 초기화는 OnRespawn에서 처리)
+                    Player.AddBuff(ModContent.BuffType<EmergencyAegisCooldown>(), 300 * 60);
+                }
             }
 
             // 회복 중 피격: 예산만 줄임(정지 없음) → 끝에 풀까지 못 참
@@ -105,6 +116,7 @@ namespace ShieldMod
         // === 잡/보스 처치 힐 진입점(GlobalNPC에서 호출) ===
         public void TryOnKillHeal(bool isBossKill)
         {
+            if (Main.netMode == NetmodeID.MultiplayerClient) return;
             var mp = Player.GetModPlayer<MyModPlayer>();
             if (!HasAegis || Player.statLife <= 0 || mp.maxShield <= 0) return;
 
