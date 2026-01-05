@@ -29,6 +29,8 @@ namespace ShieldMod
         // 편의 프로퍼티
         public int CurrentShield => shield;
         public int MaxShield => maxShield;
+        public int ShieldBreakCooldownTicks => shieldBreakCooldown;
+        public int TimeSinceLastHitTicks => timeSinceLastHit;
         public int HitEffectTimer => hitEffectTimer;
 
         // 외부(선흡수 등)에서 안전하게 호출할 수 있는 유틸(리플렉션 제거)
@@ -188,28 +190,7 @@ namespace ShieldMod
             }
 
             // ===== 기본 자연 재생 로직(원본 유지) =====
-            float regenPerSecond = 1f;
-            if (timeSinceLastHit >= 300) regenPerSecond = 2f;
-            if (timeSinceLastHit >= 600) regenPerSecond = 3f;
-            if (timeSinceLastHit >= 900) regenPerSecond = 5f;
-            if (timeSinceLastHit >= 1200) regenPerSecond = 8f;
-            if (timeSinceLastHit >= 1800) regenPerSecond = 12f;
-            if (timeSinceLastHit >= 2400) regenPerSecond = 20f;
-
-            regenPerSecond *= 1f + ShieldRegenBonus;
-
-            // 보스전 상한(원본 유지) - LINQ 제거(할당/오버헤드 방지)
-            bool anyBoss = false;
-            for (int i = 0; i < Main.maxNPCs; i++)
-            {
-                NPC n = Main.npc[i];
-                if (n != null && n.active && n.boss) { anyBoss = true; break; }
-            }
-            if (anyBoss)
-            {
-                float bossLimit = 5f * (1f + ShieldRegenBonus);
-                if (regenPerSecond > bossLimit) regenPerSecond = bossLimit;
-            }
+            float regenPerSecond = CalculateNaturalRegenPerSecond();
 
             int interval = (int)(60f / regenPerSecond);
             if (regenPerSecond > 0f && interval > 0 && regenTimer % interval == 0 && shield < maxShield)
@@ -295,7 +276,51 @@ namespace ShieldMod
             if (info.Damage > 0)
                 timeSinceLastHit = 0;
         }
+
+        public (float naturalRegenPerSecond, float aegisRegenPerSecond) GetShieldRegenPerSecond()
+        {
+            bool hasAbsorptionSigil = Player.GetModPlayer<AbsorptionSigilPlayer>().HasAbsorptionSigil;
+            bool hasAegis = Player.GetModPlayer<EmergencyAegisPlayer>().HasAegis;
+
+            if (shieldBreakCooldown > 0 || hasAbsorptionSigil || shield >= maxShield)
+                return (0f, 0f);
+
+            float natural = CalculateNaturalRegenPerSecond();
+            float aegis = 0f;
+
+            if (hasAegis && Player.statLife > 0 && shield < maxShield)
+                aegis = 2f;
+
+            return (natural, aegis);
+        }
+
+        private float CalculateNaturalRegenPerSecond()
+        {
+            float regenPerSecond = 1f;
+            if (timeSinceLastHit >= 300) regenPerSecond = 2f;
+            if (timeSinceLastHit >= 600) regenPerSecond = 3f;
+            if (timeSinceLastHit >= 900) regenPerSecond = 5f;
+            if (timeSinceLastHit >= 1200) regenPerSecond = 8f;
+            if (timeSinceLastHit >= 1800) regenPerSecond = 12f;
+            if (timeSinceLastHit >= 2400) regenPerSecond = 20f;
+
+            regenPerSecond *= 1f + ShieldRegenBonus;
+
+            // 보스전 상한(원본 유지) - LINQ 제거(할당/오버헤드 방지)
+            bool anyBoss = false;
+            for (int i = 0; i < Main.maxNPCs; i++)
+            {
+                NPC n = Main.npc[i];
+                if (n != null && n.active && n.boss) { anyBoss = true; break; }
+            }
+            if (anyBoss)
+            {
+                float bossLimit = 5f * (1f + ShieldRegenBonus);
+                if (regenPerSecond > bossLimit) regenPerSecond = bossLimit;
+            }
+
+            return regenPerSecond;
+        }
     }
 
 }
-

@@ -28,6 +28,11 @@ namespace ShieldMod
         [DefaultValue(true)]
         public bool EnableShieldElectricEffect;
 
+        [Label("Show regen/cooldown hint")]
+        [Tooltip("Displays your current shield regeneration tier (1/2/3/5/8/12/20 per second) or break cooldown as a small HUD label.")]
+        [DefaultValue(true)]
+        public bool ShowRegenCooldownIndicator;
+
         [Label("Shield Max Health Ratio")]
         [Tooltip("Set the maximum shield as a percentage of the player's max health (statLifeMax2).\nExample: 1.00 = 100%, 0.25 = 25%")]
         [Range(0.25f, 1f)]
