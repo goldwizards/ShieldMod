@@ -63,21 +63,12 @@ namespace ShieldMod
         private int _netLastMax;
         private int _netLastBreakCd;
         private int _netLastTimeSinceHit;
-        private static float _serverShieldMaxRatio = 1f;
-
-        public void SetServerShieldMaxRatio(float ratio)
-        {
-            _serverShieldMaxRatio = MathHelper.Clamp(ratio, 0.25f, 1f);
-        }
 
         private static float GetShieldMaxRatio()
         {
-            // 멀티에서는 서버 설정을 권위로 사용합니다. (클라에서도 서버가 내려준 비율을 사용)
+            // 멀티에서는 서버 설정을 권위로 사용합니다.
             if (Main.netMode == NetmodeID.Server)
                 return MathHelper.Clamp(ModContent.GetInstance<ShieldModServerConfig>().ShieldMaxRatio, 0.25f, 1f);
-
-            if (Main.netMode == NetmodeID.MultiplayerClient)
-                return MathHelper.Clamp(_serverShieldMaxRatio, 0.25f, 1f);
 
             return MathHelper.Clamp(ModContent.GetInstance<ShieldModConfig>().ShieldMaxRatio, 0.25f, 1f);
         }
@@ -160,7 +151,7 @@ namespace ShieldMod
                 // 클라에서 maxShield가 0이라 UI가 완전히 죽는 걸 방지하는 최소 안전장치
                 if (maxShield <= 0)
                 {
-                    float ratio = MathHelper.Clamp(_serverShieldMaxRatio > 0f ? _serverShieldMaxRatio : ModContent.GetInstance<ShieldModConfig>().ShieldMaxRatio, 0.25f, 1f);
+                    float ratio = MathHelper.Clamp(ModContent.GetInstance<ShieldModConfig>().ShieldMaxRatio, 0.25f, 1f);
                     maxShield = (int)(Player.statLifeMax2 * ratio);
                     if (shield > maxShield) shield = maxShield;
                 }
@@ -271,7 +262,6 @@ namespace ShieldMod
             packet.Write(maxShield);
             packet.Write(shieldBreakCooldown);
             packet.Write(timeSinceLastHit);
-            packet.Write(GetShieldMaxRatio());
             packet.Send(toWho, -1);
         }
 

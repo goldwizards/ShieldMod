@@ -29,7 +29,6 @@ namespace ShieldMod
                     int maxShield = reader.ReadInt32();
                     int breakCd = reader.ReadInt32();
                     int timeSinceHit = reader.ReadInt32();
-                    float shieldMaxRatio = reader.ReadSingle();
 
                     if (playerId < Main.maxPlayers)
                     {
@@ -41,7 +40,6 @@ namespace ShieldMod
                             mp.maxShield = maxShield;
                             mp.shieldBreakCooldown = breakCd;
                             mp.timeSinceLastHit = timeSinceHit;
-                            mp.SetServerShieldMaxRatio(shieldMaxRatio);
                         }
                     }
                     break;
