@@ -80,6 +80,14 @@ Configs: {
 	ShieldModConfig: {
 		DisplayName: Shield Mod Config
 
+		Headers: {
+			UI: UI
+			Multiplayer: Multiplayer
+			VFXNumbers: VFX - Numbers
+			VFXHitEffects: VFX - Hit Effects
+			BubbleShield: Bubble Shield
+		}
+
 		ShowShieldText: {
 			Label: Show blue numbers on shield absorption
 			Tooltip: Displays blue numbers when damage is absorbed by your shield.
@@ -120,8 +128,43 @@ Configs: {
 		}
 
 		ShowRegenCooldownIndicator: {
-			Tooltip: Displays your current shield regeneration tier (1/2/3/5/8/12/20 per second) or break cooldown as a small HUD label.
 			Label: Show regen/cooldown hint
+			Tooltip: Displays your current shield regeneration tier (1/2/3/5/8/12/20 per second) or break cooldown as a small HUD label.
+		}
+
+		ShowOtherPlayersShieldWhenFull: {
+			Label: Show other players' shield when full
+			Tooltip: When enabled, the overhead 2px shield line is shown whenever other players have shield > 0 (even at full).
+		}
+
+		HitEffectStyle: {
+			Label: Hit effect style
+			Tooltip: Select how the shield hit visual effect is displayed.
+		}
+
+		EnableBubbleShield: {
+			Label: Enable bubble shield (player)
+			Tooltip: Draws a simple bubble overlay around your character when shield > 0.
+		}
+
+		BubbleShieldOpacity: {
+			Label: Bubble shield opacity
+			Tooltip: Opacity of the bubble overlay (0.0 = invisible, 1.0 = solid).
+		}
+
+		BubbleShieldPulseOnLow: {
+			Label: Pulse when shield is low
+			Tooltip: Adds a subtle pulse to the bubble when shield is at or below 25%.
+		}
+
+		BubbleShieldBob: {
+			Label: Bubble bobbing
+			Tooltip: Adds a small vertical bobbing motion to the bubble.
+		}
+
+		BubbleShieldDoubleDraw: {
+			Label: Extra glow pass
+			Tooltip: Draws the bubble twice for a slightly stronger glow.
 		}
 	}
 
@@ -150,6 +193,35 @@ Configs: {
 				Set maximum shield as a percentage of the player's max health (statLifeMax2).
 				Example: 1.00 = 100%, 0.25 = 25%
 				'''
+		}
+	}
+
+	ShieldHitVfxStyle: {
+		Tooltip: ""
+
+		Off: {
+			Label: Off
+			Tooltip: ""
+		}
+
+		Subtle: {
+			Label: Subtle
+			Tooltip: ""
+		}
+
+		Normal: {
+			Label: Normal
+			Tooltip: ""
+		}
+
+		Strong: {
+			Label: Strong
+			Tooltip: ""
+		}
+
+		ImpactOnly: {
+			Label: Impact-only
+			Tooltip: ""
 		}
 	}
 }

@@ -17,13 +17,18 @@ namespace ShieldMod.Layers
         public override bool GetDefaultVisibility(PlayerDrawSet drawInfo)
         {
             var p = drawInfo.drawPlayer;
-            return p != null && p.active && !p.dead && p.GetModPlayer<MyModPlayer>().showHitEffect;
+            var cfg = ModContent.GetInstance<ShieldModConfig>();
+                        var mp = p.GetModPlayer<MyModPlayer>();
+            return p != null && p.active && !p.dead && mp != null && mp.HitEffectTimer > 0 && cfg.HitEffectStyle == ShieldModConfig.ShieldHitVfxStyle.Subtle;
         }
 
         protected override void Draw(ref PlayerDrawSet drawInfo)
         {
             var player = drawInfo.drawPlayer;
             var mp = player.GetModPlayer<MyModPlayer>();
+
+            var cfg = ModContent.GetInstance<ShieldModConfig>();
+            if (cfg.HitEffectStyle != ShieldModConfig.ShieldHitVfxStyle.Subtle) return;
 
             int timer = mp.HitEffectTimer; // ✅ 공개 게터 사용
             if (timer <= 0) return;
@@ -36,9 +41,8 @@ namespace ShieldMod.Layers
             if (t < 0f) t = 0f; if (t > 1f) t = 1f;
 
             float alpha = t;
-            float scale = 1.0f + 0.15f * (1f - t);
-
-            // ✅ 위치는 파일 2 버전 그대로 유지
+                        float scale = (1.0f + 0.15f * (1f - t)) * 1.05f; // +5% size
+// ✅ 위치는 파일 2 버전 그대로 유지
             Vector2 pos = player.Center - Main.screenPosition + new Vector2(0f, 4f);
 
             Texture2D tex = _hitTex.Value;

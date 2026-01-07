@@ -16,6 +16,7 @@ namespace ShieldMod
 
         // 시각 효과(원본에 맞게 유지)
         public bool showHitEffect;
+        public bool LastShieldHitStrong; // for Impact-only VFX
         private int hitEffectTimer;
 
         // 완전 흡수(HP가 실제로 닳지 않아야 하는 상황)에서 빨간 데미지 CombatText(최소 1 등)를 잠깐 숨기기 위한 플래그
@@ -183,19 +184,23 @@ namespace ShieldMod
                 return;
             }
 
-            float naturalRegenMultiplier = hasAbsorptionSigil ? 0.5f : 1f;
+            // 흡수의 인장(A): 자연 보호막 재생 완전 차단
+            float naturalRegenMultiplier = hasAbsorptionSigil ? 0f : 1f;
 
             // ===== 기본 자연 재생 로직(원본 유지) =====
             float regenPerSecond = CalculateNaturalRegenPerSecond() * naturalRegenMultiplier;
 
-            int interval = (int)(60f / regenPerSecond);
-            if (regenPerSecond > 0f && interval > 0 && regenTimer % interval == 0 && shield < maxShield)
+            // regenPerSecond가 0일 수 있으므로(흡수의 인장 등), 0 나눗셈을 피하기 위해 가드합니다.
+            if (regenPerSecond > 0f && shield < maxShield)
             {
-                shield++; // 자연 재생 +1
+                int interval = (int)(60f / regenPerSecond);
+                if (interval < 1) interval = 1;
+                if (regenTimer % interval == 0)
+                    shield++; // 자연 재생 +1
             }
 
             // ===== Emergency Aegis: 기본 재생 +2/s (파괴 후 3초 체감, 정확히 +2/s 보장) =====
-            if (hasAegis && Player.statLife > 0 && shield < maxShield)
+            if (hasAegis && !hasAbsorptionSigil && Player.statLife > 0 && shield < maxShield)
             {
                 // 토큰 생성: 틱당 +2 누적 → 60마다 1개 = 초당 정확히 +2
                 _aegisTickAccum += 2;
@@ -283,11 +288,12 @@ namespace ShieldMod
                 return (0f, 0f);
 
             float natural = CalculateNaturalRegenPerSecond();
+            // 흡수의 인장(A): 자연 보호막 재생 완전 차단
             if (hasAbsorptionSigil)
-                natural *= 0.5f;
+                natural = 0f;
             float aegis = 0f;
 
-            if (hasAegis && Player.statLife > 0 && shield < maxShield)
+            if (hasAegis && !hasAbsorptionSigil && Player.statLife > 0 && shield < maxShield)
                 aegis = 2f;
 
             return (natural, aegis);

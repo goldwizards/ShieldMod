@@ -24,6 +24,8 @@ namespace ShieldMod
         // 이펙트/사운드 큐
         private int _queuedAbsorb = 0;
         private bool _queuedStrong = false;
+        private int _queuedHitDir = 0;
+        private bool _queuedBreak = false;
 
         // 완전 흡수 플래그 + 1데미지 생존 보정
         private bool _fullyAbsorbedFlag = false;
@@ -39,6 +41,7 @@ namespace ShieldMod
                 if (info.Damage <= 0 || mp.shield <= 0) return;
 
                 int incoming = info.Damage;
+                int beforeShield = mp.shield;
                 int absorb = System.Math.Min(mp.shield, incoming);
                 if (absorb <= 0) return;
 
@@ -52,6 +55,10 @@ namespace ShieldMod
                 // 실드 파괴 쿨다운(요구 스펙 유지: Aegis 착용 시 3초, 아니면 5초)
                 if (mp.shield <= 0)
                 {
+                    // '지금 타격'으로 보호막이 0이 된 순간만 깨짐 연출(중복 방지)
+                    if (beforeShield > 0)
+                        _queuedBreak = true;
+
                     bool hasAegis = Player.GetModPlayer<EmergencyAegisPlayer>()?.HasAegis == true;
                     mp.shieldBreakCooldown = hasAegis ? 180 : 300;
                     mp.ResetAegisRegenTokens();
@@ -64,6 +71,8 @@ namespace ShieldMod
                 // 연출 큐
                 _queuedAbsorb = absorb;
                 _queuedStrong = (remaining <= 0);
+                mp.LastShieldHitStrong = _queuedStrong;
+                _queuedHitDir = info.HitDirection;
 
                 // =========================
                 // 빨간 숫자 표시 규칙
@@ -104,7 +113,16 @@ namespace ShieldMod
             if (_queuedAbsorb <= 0 || Main.dedServ || Player.whoAmI != Main.myPlayer) return;
 
             PlayShieldImpactSfx(_queuedStrong);
-            SpawnShieldImpactDust(_queuedAbsorb, _queuedStrong);
+            var cfg = ModContent.GetInstance<ShieldModConfig>();
+            // Hit VFX (Arc):
+            // - Strong: always Arc
+            // - Impact-only: Arc only when the last absorbed hit is "strong"
+            if (cfg.HitEffectStyle == ShieldModConfig.ShieldHitVfxStyle.Strong)
+                SpawnShieldDeflectArcDust(_queuedAbsorb, _queuedHitDir, strongStyle: true, fullAbsorb: _queuedStrong);
+            else if (cfg.HitEffectStyle == ShieldModConfig.ShieldHitVfxStyle.ImpactOnly && _queuedStrong)
+                SpawnShieldDeflectArcDust(_queuedAbsorb, _queuedHitDir, strongStyle: false, fullAbsorb: true);
+if (_queuedBreak)
+                PlayShieldBreakSfx();
 
             if (ModContent.GetInstance<ShieldModConfig>().ShowShieldText && !Main.dedServ)
             {
@@ -114,6 +132,7 @@ namespace ShieldMod
 
             _queuedAbsorb = 0;
             _queuedStrong = false;
+            _queuedBreak = false;
         }
 
         private void PlayShieldImpactSfx(bool strong)
@@ -122,25 +141,54 @@ namespace ShieldMod
             SoundEngine.PlaySound(SoundID.Item30 with { Pitch = strong ? -0.1f : 0.05f, Volume = 1f }, Player.Center);
         }
 
-        private void SpawnShieldImpactDust(int absorb, bool strong)
+        private 
+        void SpawnShieldDeflectArcDust(int absorb, int hitDir, bool strongStyle, bool fullAbsorb)
         {
-            int count = (strong ? 14 : 8) + absorb / 60;
-            if (count > 24) count = 24;
+            // Directional Arc on the incoming side (eye-catching + not electric).
+            int side = hitDir;
+            if (side == 0) side = Player.direction;
+
+            float baseAngle = (side == 1) ? 0f : MathHelper.Pi; // right / left
+            float arcSpan = MathHelper.ToRadians(fullAbsorb ? 140f : 120f);
+
+            int count = (strongStyle ? 14 : 10) + absorb / 80;
+            if (fullAbsorb) count += 3;
+            if (count > 26) count = 26;
+
+            Color c = ModContent.GetInstance<ShieldModConfig>().ShieldHitColor;
+
+            float radiusMin = strongStyle ? 18f : 14f;
+            float radiusMax = strongStyle ? 28f : 22f;
 
             for (int i = 0; i < count; i++)
             {
-                float angle = MathHelper.TwoPi * (i / (float)count) + Main.rand.NextFloat(-0.2f, 0.2f);
-                var dir = angle.ToRotationVector2();
-                float spd = strong ? Main.rand.NextFloat(3.2f, 5.0f) : Main.rand.NextFloat(1.6f, 3.2f);
+                float t = (count <= 1) ? 0.5f : i / (float)(count - 1);
+                float ang = baseAngle + MathHelper.Lerp(-arcSpan * 0.5f, arcSpan * 0.5f, t) + Main.rand.NextFloat(-0.08f, 0.08f);
+                Vector2 dir = ang.ToRotationVector2();
 
-                int dustId = Dust.NewDust(Player.Center, 0, 0, DustID.BlueCrystalShard, 0f, 0f, 160,
-                                          new Color(80, 160, 255), strong ? 1.15f : 0.9f);
+                float radius = Main.rand.NextFloat(radiusMin, radiusMax);
+                Vector2 pos = Player.Center + dir * radius;
+
+                float spd = strongStyle ? Main.rand.NextFloat(2.6f, 4.1f) : Main.rand.NextFloat(2.0f, 3.2f);
+                if (fullAbsorb) spd *= 1.1f;
+
+                int dustId = Dust.NewDust(pos, 0, 0, DustID.MagicMirror, 0f, 0f, 150, c, strongStyle ? 1.2f : 1.05f);
                 var d = Main.dust[dustId];
                 d.noGravity = true;
-                d.velocity = dir * spd;
-                d.position += dir * Main.rand.NextFloat(6f, 12f);
+                d.velocity = dir * spd + Main.rand.NextVector2Circular(0.6f, 0.6f);
+
+                // pull slightly along the arc to look like a curved deflect
+                d.position -= dir * Main.rand.NextFloat(2f, 6f);
             }
         }
+
+        private void PlayShieldBreakSfx()
+        {
+            // 보호막 파괴 SFX(바닐라, 항아리 느낌 방지): Item4 + Item29(작게)
+            SoundEngine.PlaySound(SoundID.Item4 with { Volume = 0.95f, Pitch = 0.05f }, Player.Center);
+            SoundEngine.PlaySound(SoundID.Item29 with { Volume = 0.22f, Pitch = 0.18f }, Player.Center);
+        }
+
 
         public override void PostHurt(Player.HurtInfo info)
         {

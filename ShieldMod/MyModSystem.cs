@@ -169,7 +169,8 @@ namespace ShieldMod
                 var mp = p.GetModPlayer<MyModPlayer>();
                 if (mp == null || mp.maxShield <= 0) continue;
                 if (mp.shield <= 0) continue;
-                if (mp.shield >= mp.maxShield) continue; // ✅ 풀일 때 숨김
+                bool showWhenFull = ModContent.GetInstance<ShieldModConfig>().ShowOtherPlayersShieldWhenFull;
+                if (!showWhenFull && mp.shield >= mp.maxShield) continue; // 기본: 풀일 때 숨김
 
                 float frac = mp.maxShield > 0 ? (mp.shield / (float)mp.maxShield) : 0f;
                 frac = MathHelper.Clamp(frac, 0f, 1f);
