@@ -34,6 +34,9 @@ namespace ShieldMod
 
         public override void ModifyHurt(ref Player.HurtModifiers modifiers)
         {
+            if (Main.netMode == NetmodeID.MultiplayerClient)
+                return;
+
             var mp = Player.GetModPlayer<MyModPlayer>();
             if (mp == null || mp.shield <= 0) return;
 
@@ -106,6 +109,9 @@ namespace ShieldMod
                     // 부분 흡수(HP 데미지 있음): 빨간 숫자 정상 출력
                     // → HideCombatText / SuppressRedDamageText 건드리지 않음
                 }
+
+                if (Main.netMode == NetmodeID.Server)
+                    mp.NetSendShield(-1);
             };
         }
 
