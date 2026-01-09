@@ -25,6 +25,9 @@ namespace ShieldMod
         // 흡수량 50% 유지 남은 시간(틱)
         private int _siphonPenaltyTicks;
 
+        // UI 표시용(읽기 전용)
+        public int SiphonPenaltyTicks => _siphonPenaltyTicks;
+
         public override void Initialize()
         {
             _accumPermille = 0;

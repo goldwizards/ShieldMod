@@ -2,6 +2,7 @@ using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
+using Terraria.Localization;
 using Terraria.ModLoader;
 using Terraria.UI;
 
@@ -73,7 +74,7 @@ namespace ShieldMod.UI
             // 텍스트
             string text = $"{shield} / {maxShield}";
             Vector2 textPos = new Vector2(position.X + (barWidth / 2f), position.Y + barHeight + 18f);
-            Utils.DrawBorderString(spriteBatch, text, textPos, Color.White, 1f, 0.5f, 0.5f);
+            Utils.DrawBorderString(spriteBatch, text, textPos, Color.White, 0.9f, 0.5f, 0.5f);
 
             Vector2 regenPos = new Vector2(textPos.X, textPos.Y + 16f);
             DrawRegenAndCooldownInfo(spriteBatch, regenPos, modPlayer, config, alignLeft: false);
@@ -221,7 +222,7 @@ namespace ShieldMod.UI
 
             string text = $"{modPlayer.shield} / {modPlayer.maxShield}";
             Vector2 textPos = new Vector2(startPos.X + 16, startPos.Y + iconCount * spacing + 8);
-            Utils.DrawBorderString(spriteBatch, text, textPos, Color.White, 1f, 0.5f, 0.5f);
+            Utils.DrawBorderString(spriteBatch, text, textPos, Color.White, 0.7f, 0.5f, 0.5f);
 
             Vector2 regenPos = new Vector2(textPos.X, textPos.Y + 16f);
             DrawRegenAndCooldownInfo(spriteBatch, regenPos, modPlayer, config, alignLeft: true);
@@ -245,30 +246,60 @@ namespace ShieldMod.UI
             int cooldown = modPlayer.ShieldBreakCooldownTicks;
             (float natural, float aegis) = modPlayer.GetShieldRegenPerSecond();
 
+            // 흡수의 인장(흡수 반감) 표시
+            var sigil = Main.LocalPlayer.GetModPlayer<AbsorptionSigilPlayer>();
+            bool hasSigil = sigil?.HasAbsorptionSigil == true;
+            int penaltyTicks = sigil?.SiphonPenaltyTicks ?? 0;
+
+            // Localization helper (uses Localization/*.hjson)
+            string T(string key, params object[] args)
+                => Language.GetTextValue($"Mods.ShieldMod.UI.{key}", args);
+
             string label;
             Color color;
 
-            if (cooldown > 0)
+            // ✅ 흡수의 인장 착용 시: '쿨다운' 대신 '흡수 감소' 타이머를 우선 표시
+            if (hasSigil)
             {
-                label = $"Cooldown {FormatSeconds(cooldown)}";
-                color = new Color(250, 140, 110);
-            }
-            else if (natural <= 0f && aegis <= 0f)
-            {
-                label = "Regen paused";
-                color = Color.LightGray;
+                // 패널티 타이머가 아직 잡히지 않은 경우(초기 동기화 타이밍 등)에도,
+                // 실드 파괴 쿨다운이 켜져 있다면 그 시간을 대체 표기로 사용한다.
+                int showTicks = penaltyTicks > 0 ? penaltyTicks : cooldown;
+
+                if (showTicks > 0)
+                {
+                    label = T("AbsorbReduced", FormatSeconds(showTicks));
+                    color = new Color(250, 140, 110);
+                }
+                else
+                {
+                    label = T("AbsorbNormal");
+                    color = Color.LightGray;
+                }
             }
             else
             {
-                label = $"Regen {natural:0.#}/s";
-                if (aegis > 0f)
-                    label += $" (+{aegis:0.#})";
+                if (cooldown > 0)
+                {
+                    label = T("Cooldown", FormatSeconds(cooldown));
+                    color = new Color(250, 140, 110);
+                }
+                else if (natural <= 0f && aegis <= 0f)
+                {
+                    label = T("RegenPaused");
+                    color = Color.LightGray;
+                }
+                else
+                {
+                    label = T("Regen", natural.ToString("0.#"));
+                    if (aegis > 0f)
+                        label += $" (+{aegis:0.#})";
 
-                float k = MathHelper.Clamp(natural / 12f, 0f, 1f);
-                color = Color.Lerp(new Color(120, 190, 255), new Color(70, 230, 255), k);
+                    float k = MathHelper.Clamp(natural / 12f, 0f, 1f);
+                    color = Color.Lerp(new Color(120, 190, 255), new Color(70, 230, 255), k);
+                }
             }
 
-            float scale = 0.85f;
+            float scale = 0.65f; // 30% smaller (0.85 * 0.7)
             Utils.DrawBorderString(spriteBatch, label, anchor, color, scale, alignLeft ? 0f : 0.5f, 0f);
         }
 

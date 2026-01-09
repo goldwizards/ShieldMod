@@ -30,13 +30,9 @@ namespace ShieldMod
         // 완전 흡수 플래그 + 1데미지 생존 보정
         private bool _fullyAbsorbedFlag = false;
         private int _lifeBump = 0;
-        private int _fullAbsorbFrame = -1;
 
         public override void ModifyHurt(ref Player.HurtModifiers modifiers)
         {
-            if (Main.netMode == NetmodeID.MultiplayerClient)
-                return;
-
             var mp = Player.GetModPlayer<MyModPlayer>();
             if (mp == null || mp.shield <= 0) return;
 
@@ -55,6 +51,20 @@ namespace ShieldMod
                 info.Damage = remaining;
 
                 mp.timeSinceLastHit = 0;
+
+                // Multiplayer: the server's MyModPlayer instance may not run this ModifyHurt
+                // for the remote player (Terraria processes player hurt client-side).
+                // If we don't tell the server about consumed shield, the server will keep
+                // broadcasting the old (often full) shield value and the client's shield
+                // will "snap back" to full.
+                if (Main.netMode == NetmodeID.MultiplayerClient && Player.whoAmI == Main.myPlayer)
+                {
+                    ModPacket pkt = Mod.GetPacket();
+                    pkt.Write((byte)ShieldMod.Msg.ReportShieldAbsorb);
+                    pkt.Write((byte)Player.whoAmI);
+                    pkt.Write(absorb);
+                    pkt.Send();
+                }
 
                 // 실드 파괴 쿨다운(요구 스펙 유지: Aegis 착용 시 3초, 아니면 5초)
                 if (mp.shield <= 0)
@@ -85,7 +95,6 @@ namespace ShieldMod
                 {
                     // 완전 흡수: HP 데미지는 "없어야" 하므로 빨간 숫자 숨김
                     _fullyAbsorbedFlag = true;
-                    _fullAbsorbFrame = (int)Main.GameUpdateCount;
 
                     // 체력 1일 때 1데미지로 죽는 것 방지
                     if (Player.statLife <= 1)
@@ -109,9 +118,6 @@ namespace ShieldMod
                     // 부분 흡수(HP 데미지 있음): 빨간 숫자 정상 출력
                     // → HideCombatText / SuppressRedDamageText 건드리지 않음
                 }
-
-                if (Main.netMode == NetmodeID.Server)
-                    mp.NetSendShield(-1);
             };
         }
 
@@ -201,8 +207,7 @@ if (_queuedBreak)
         public override void PostHurt(Player.HurtInfo info)
         {
             // 완전 흡수 시, 강제한 1데미지를 즉시 되돌려서 "실제 체력은 안 깎이게" 처리
-            if (_fullyAbsorbedFlag && info.Damage > 0
-                && Main.GameUpdateCount - _fullAbsorbFrame <= 1)
+            if (_fullyAbsorbedFlag && info.Damage > 0)
             {
                 // 1) HP 복구
                 Player.statLife = System.Math.Min(Player.statLifeMax2, Player.statLife + info.Damage);
@@ -219,7 +224,6 @@ if (_queuedBreak)
             }
 
             _fullyAbsorbedFlag = false;
-            _fullAbsorbFrame = -1;
         }
 
         private void EnforceShieldIFrames()

@@ -9,8 +9,8 @@ namespace ShieldMod
         public override ConfigScope Mode => ConfigScope.ClientSide;        [Header("$Mods.ShieldMod.Configs.ShieldModConfig.Headers.VFXNumbers")]
 
 
-        [Label("Show shield absorption numbers")]
-        [Tooltip("Displays damage numbers when your shield absorbs hits.")]
+        [Label("보호막 흡수 숫자 표시")]
+        [Tooltip("보호막이 피해를 흡수할 때, 흡수된 피해량을 숫자(전투 텍스트)로 표시합니다.\n색상은 '보호막 피격 이펙트 색상' 설정을 따릅니다.")]
         [DefaultValue(true)]
         public bool ShowShieldText;
         [Header("$Mods.ShieldMod.Configs.ShieldModConfig.Headers.UI")]
@@ -59,7 +59,7 @@ namespace ShieldMod
 
         [Label("Shield regen effect color")]
         [Tooltip("Color used for shield heal text effects.")]
-        [DefaultValue(typeof(Color), "0, 110, 255, 255")]
+        [DefaultValue(typeof(Color), "0, 255, 255, 255")]
         public Color ShieldRegenColor { get; set; } = Color.SkyBlue;
         [Header("$Mods.ShieldMod.Configs.ShieldModConfig.Headers.BubbleShield")]
 

@@ -7,8 +7,8 @@
 시간이 지날수록 재생 속도는 점점 빨라집니다.
 (단, 보스전 중에는 재생 속도가 제한됩니다)
 
-실드로 피해를 전부 막아도 빨간 피해 숫자는 시스템상 숨길 수 없습니다.
-대신 실드 흡수량은 파란색 숫자로 표시되며, 설정에서 껐다 켤 수 있습니다.
+보호막이 피해를 전부 흡수한 타격(HP 실제 피해 0)에서는 빨간 피해 숫자를 숨깁니다.
+대신 보호막이 흡수한 피해량을 "보호막 흡수 숫자"로 표시하며, 설정에서 껐다/켤 수 있습니다.
 
 ✅ 주요 특징
 실드가 모든 일반 피해를 먼저 흡수
@@ -18,7 +18,7 @@
 
 피해 없이 일정 시간 경과 시 자동 재생성
 
-파란색 실드 피해 텍스트 표시 (설정 가능)
+보호막 흡수 피해 텍스트 표시 (설정 가능)
 
 맞춤형 UI, 효과음, 이펙트 제공
 
@@ -34,8 +34,8 @@ If you avoid taking damage for a while, the shield will begin to regenerate —
 and the longer you stay unharmed, the faster it regenerates.
 (Note: During boss fights, the regeneration speed is limited.)
 
-Even if the shield absorbs all damage, the red damage numbers will still appear due to game engine limitations.
-However, absorbed damage is also shown as blue numbers, which you can toggle in the settings.
+When the shield absorbs all damage (HP damage = 0), the red damage numbers are hidden.
+Instead, the absorbed amount is shown as "shield absorption numbers" (configurable in settings).
 
 ✅ Features
 Shields absorb all regular damage before HP is affected
@@ -45,6 +45,6 @@ Shield capacity is based on a percentage of your total maximum health,
 
 Shield regenerates automatically after avoiding damage for a short time
 
-Blue shield damage numbers (can be enabled or disabled in settings)
+Shield absorption numbers (can be enabled or disabled in settings)
 
 Custom UI, sounds, and visual effects included

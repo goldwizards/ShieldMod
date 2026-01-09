@@ -89,8 +89,8 @@ Configs: {
 		}
 
 		ShowShieldText: {
-			Label: Show blue numbers on shield absorption
-			Tooltip: Displays blue numbers when damage is absorbed by your shield.
+			Label: Show shield absorption numbers
+			Tooltip: Displays numbers for damage absorbed by your shield.
 		}
 
 		ShieldUIStyle: {
@@ -119,7 +119,7 @@ Configs: {
 
 		ShieldHitColor: {
 			Label: Shield hit effect color
-			Tooltip: Color used for the shield-hit overlay and blue absorption numbers.
+			Tooltip: Color used for the shield-hit overlay and shield absorption numbers.
 		}
 
 		ShieldRegenColor: {
@@ -127,44 +127,44 @@ Configs: {
 			Tooltip: Color used for shield regeneration (healing) numbers.
 		}
 
-		ShowRegenCooldownIndicator: {
-			Label: Show regen/cooldown hint
-			Tooltip: Displays your current shield regeneration tier (1/2/3/5/8/12/20 per second) or break cooldown as a small HUD label.
-		}
-
-		ShowOtherPlayersShieldWhenFull: {
-			Label: Show other players' shield when full
-			Tooltip: When enabled, the overhead 2px shield line is shown whenever other players have shield > 0 (even at full).
-		}
-
-		HitEffectStyle: {
-			Label: Hit effect style
-			Tooltip: Select how the shield hit visual effect is displayed.
-		}
-
-		EnableBubbleShield: {
-			Label: Enable bubble shield (player)
-			Tooltip: Draws a simple bubble overlay around your character when shield > 0.
-		}
-
-		BubbleShieldOpacity: {
-			Label: Bubble shield opacity
-			Tooltip: Opacity of the bubble overlay (0.0 = invisible, 1.0 = solid).
-		}
-
-		BubbleShieldPulseOnLow: {
-			Label: Pulse when shield is low
-			Tooltip: Adds a subtle pulse to the bubble when shield is at or below 25%.
+		BubbleShieldDoubleDraw: {
+			Tooltip: Draws the bubble twice for a slightly stronger glow.
+			Label: Extra glow pass
 		}
 
 		BubbleShieldBob: {
-			Label: Bubble bobbing
 			Tooltip: Adds a small vertical bobbing motion to the bubble.
+			Label: Bubble bobbing
 		}
 
-		BubbleShieldDoubleDraw: {
-			Label: Extra glow pass
-			Tooltip: Draws the bubble twice for a slightly stronger glow.
+		BubbleShieldPulseOnLow: {
+			Tooltip: Adds a subtle pulse to the bubble when shield is at or below 25%.
+			Label: Pulse when shield is low
+		}
+
+		BubbleShieldOpacity: {
+			Tooltip: Opacity of the bubble overlay (0.0 = invisible, 1.0 = solid).
+			Label: Bubble shield opacity
+		}
+
+		EnableBubbleShield: {
+			Tooltip: Draws a simple bubble overlay around your character when shield > 0.
+			Label: Enable bubble shield (player)
+		}
+
+		HitEffectStyle: {
+			Tooltip: Select how the shield hit visual effect is displayed.
+			Label: Hit effect style
+		}
+
+		ShowOtherPlayersShieldWhenFull: {
+			Tooltip: When enabled, the overhead 2px shield line is shown whenever other players have shield > 0 (even at full).
+			Label: Show other players' shield when full
+		}
+
+		ShowRegenCooldownIndicator: {
+			Tooltip: Displays your current shield regeneration tier (1/2/3/5/8/12/20 per second) or break cooldown as a small HUD label.
+			Label: Show regen/cooldown hint
 		}
 	}
 
@@ -197,33 +197,42 @@ Configs: {
 	}
 
 	ShieldHitVfxStyle: {
-		Tooltip: ""
-
-		Off: {
-			Label: Off
+		ImpactOnly: {
 			Tooltip: ""
-		}
-
-		Subtle: {
-			Label: Subtle
-			Tooltip: ""
-		}
-
-		Normal: {
-			Label: Normal
-			Tooltip: ""
+			Label: Impact-only
 		}
 
 		Strong: {
-			Label: Strong
 			Tooltip: ""
+			Label: Strong
 		}
 
-		ImpactOnly: {
-			Label: Impact-only
+		Normal: {
 			Tooltip: ""
+			Label: Normal
 		}
+
+		Subtle: {
+			Tooltip: ""
+			Label: Subtle
+		}
+
+		Off: {
+			Tooltip: ""
+			Label: Off
+		}
+
+		Tooltip: ""
 	}
+}
+
+UI: {
+	Cooldown: Cooldown {0}
+	Regen: Regen {0}/s
+	RegenWithAegis: Regen {0}/s (+{1})
+	RegenPaused: Regen paused
+	AbsorbReduced: Absorb reduced {0}
+	AbsorbNormal: Absorb normal
 }
 
 Buffs: {
