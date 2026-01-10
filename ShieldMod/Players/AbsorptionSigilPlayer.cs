@@ -65,7 +65,7 @@ namespace ShieldMod
             if (_prevShield > 0 && curShield <= 0)
             {
                 bool hasAegis = Player.GetModPlayer<EmergencyAegisPlayer>()?.HasAegis == true;
-                _siphonPenaltyTicks = hasAegis ? 240 : 360; // 4초 or 6초
+                _siphonPenaltyTicks = hasAegis ? 180 : 300; // 3초 or 5초
             }
 
             _prevShield = curShield;
@@ -96,8 +96,8 @@ namespace ShieldMod
             if (mp == null || mp.maxShield <= 0 || mp.shield >= mp.maxShield)
                 return;
 
-            // 흡수량: 기본 3%, 보호막 파괴 후 패널티 동안 50%(= 1.5%)
-            int permille = (_siphonPenaltyTicks > 0) ? 15 : 30;
+            // 흡수량: 기본 2%, 보호막 파괴 후 패널티 동안 50%(= 1%)
+            int permille = (_siphonPenaltyTicks > 0) ? 10 : 20;
 
             // 누적
             _accumPermille += damageDone * permille;
