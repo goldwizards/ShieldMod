@@ -55,7 +55,7 @@ Items: {
 		DisplayName: Absorption Sigil
 		Tooltip:
 			'''
-			Deal damage to restore your shield equal to 4% of damage dealt.
+			Deal damage to restore your shield equal to 2% of damage dealt.
 			(Direct hits only; DoT/debuff damage is excluded.)
 			Disables all shield regeneration while equipped.
 
@@ -241,3 +241,4 @@ Buffs: {
 		Description: On cooldown
 	}
 }
+
