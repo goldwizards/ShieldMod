@@ -2,6 +2,7 @@ using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
+using Terraria.ModLoader.IO;
 
 namespace ShieldMod
 {
@@ -14,6 +15,11 @@ namespace ShieldMod
         public int timeSinceLastHit;      // 마지막으로 피격된 후 경과 틱
         private int regenTimer;           // 자연 재생 타이머(틱)
 
+
+        // === 저장/복원 (재접속으로 풀충전 악용 방지) ===
+        private bool _loadedFromSave;
+        private int _savedShield;
+        private int _savedBreakCd;
         // 시각 효과(원본에 맞게 유지)
         public bool showHitEffect;
         public bool LastShieldHitStrong; // for Impact-only VFX
@@ -73,6 +79,29 @@ namespace ShieldMod
 
             return MathHelper.Clamp(ModContent.GetInstance<ShieldModConfig>().ShieldMaxRatio, 0.25f, 1f);
         }
+        public override void SaveData(TagCompound tag)
+        {
+            // 현재 보호막을 그대로 저장 (재접속 풀충전 방지)
+            tag["ShieldMod_Shield"] = shield;
+            tag["ShieldMod_BreakCd"] = shieldBreakCooldown;
+        }
+
+        public override void LoadData(TagCompound tag)
+        {
+            _loadedFromSave = tag.ContainsKey("ShieldMod_Shield");
+            if (_loadedFromSave)
+            {
+                _savedShield = tag.GetInt("ShieldMod_Shield");
+                _savedBreakCd = tag.GetInt("ShieldMod_BreakCd");
+            }
+            else
+            {
+                _savedShield = 0;
+                _savedBreakCd = 0;
+            }
+        }
+
+
 
         public override void OnEnterWorld()
         {
@@ -80,7 +109,22 @@ namespace ShieldMod
             // 클라는 서버에서 Sync를 받기 전까지 임시값을 넣되, 서버에 즉시 동기화를 요청합니다.
             float ratio = GetShieldMaxRatio();
             maxShield = (int)(Player.statLifeMax2 * ratio);
-            shield = maxShield;
+
+            // 재접속 시 풀충전하지 말고, 저장된 현재 보호막을 유지합니다.
+            if (_loadedFromSave)
+            {
+                shield = Utils.Clamp(_savedShield, 0, maxShield);
+                shieldBreakCooldown = Utils.Clamp(_savedBreakCd, 0, 60 * 60 * 60); // 안전 클램프(1시간)
+            }
+            else
+            {
+                shield = maxShield; // 최초 입장(저장값 없음)만 풀 충전
+                shieldBreakCooldown = 0;
+            }
+
+            // 재접속으로 재생 단계(timeSinceLastHit)가 쌓이는 악용/튐 방지
+            regenTimer = 0;
+            timeSinceLastHit = 0;
 
             _netLastShield = shield;
             _netLastMax = maxShield;
@@ -99,8 +143,10 @@ namespace ShieldMod
         {
             float ratio = GetShieldMaxRatio();
             maxShield = (int)(Player.statLifeMax2 * ratio);
-            shield = maxShield;
+            shield = (maxShield + 1) / 2; // 부활 시 보호막은 절반만
             shieldBreakCooldown = 0;
+            regenTimer = 0;
+            timeSinceLastHit = 0;
 
             // Aegis 보너스 재생 상태 초기화
             _aegisTickAccum = 0;
@@ -158,8 +204,18 @@ namespace ShieldMod
                 }
             }
 
-            regenTimer++;
-            timeSinceLastHit++;
+            if (hasAbsorptionSigil)
+            {
+                // 흡수의 인장 착용 중에는 자연 재생이 차단되므로,
+                // 노피격 시간 누적으로 재생 단계가 쌓이지 않게 고정합니다.
+                regenTimer = 0;
+                timeSinceLastHit = 0;
+            }
+            else
+            {
+                regenTimer++;
+                timeSinceLastHit++;
+            }
 
             if (hitEffectTimer > 0)
             {

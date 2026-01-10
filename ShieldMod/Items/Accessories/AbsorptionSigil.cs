@@ -1,6 +1,7 @@
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
+using ShieldMod.Interfaces;
 
 namespace ShieldMod.Items.Accessories
 {
@@ -9,7 +10,7 @@ namespace ShieldMod.Items.Accessories
     /// - 입힌 피해량의 4%만큼 보호막 회복 (직접 타격만)
     /// - 디버프/DoT(지속피해)는 OnHit 훅이 호출되지 않으므로 자연히 제외됩니다.
     /// </summary>
-    public class AbsorptionSigil : ModItem
+    public class AbsorptionSigil : ModItem, IShieldAccessory
     {
         public override string Texture => "ShieldMod/Textures/Items/Accessories/AbsorptionSigil";
 

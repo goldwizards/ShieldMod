@@ -1,10 +1,11 @@
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
+using ShieldMod.Interfaces;
 
 namespace ShieldMod.Items.Accessories
 {
-    public class GemOfProtection : ModItem
+    public class GemOfProtection : ModItem, IProtectionTierAccessory
     {
         public override string Texture => "ShieldMod/Textures/Items/Accessories/GemOfProtection";
         

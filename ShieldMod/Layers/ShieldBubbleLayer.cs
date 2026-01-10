@@ -1,6 +1,5 @@
 using Terraria;
 using Terraria.ModLoader;
-using Terraria.GameContent;
 using Terraria.DataStructures;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -27,6 +26,7 @@ namespace ShieldMod.Layers
 
             var cfg = ModContent.GetInstance<ShieldModConfig>();
             if (!cfg.EnableBubbleShield) return false;
+
             // Subtle hit style: do not show the always-on bubble overlay
             if (cfg.HitEffectStyle == ShieldModConfig.ShieldHitVfxStyle.Subtle) return false;
             // Hit effect style Off: also hide the always-on bubble overlay
@@ -57,11 +57,24 @@ namespace ShieldMod.Layers
                 alpha = MathHelper.Clamp(alpha + 0.35f * t, 0f, 1f);
             }
 
-            // Slight pulse when low shield (optional)
-            if (cfg.BubbleShieldPulseOnLow && mp.maxShield > 0 && mp.shield <= (int)(mp.maxShield * 0.25f))
+            // Detect low shield (<= 25%)
+            bool isLowShield = cfg.BubbleShieldPulseOnLow
+                               && mp.maxShield > 0
+                               && mp.shield <= (int)(mp.maxShield * 0.25f);
+
+            // Low-shield pulse (stronger): alpha + scale pulse
+            float lowPhase = 0f; // 0..1
+            float lowGlowBoost = 0f; // 0..1 for double-draw boost
+            if (isLowShield)
             {
-                float pulse = 0.08f * (0.5f + 0.5f * (float)System.Math.Sin(Main.GlobalTimeWrappedHourly * 7f));
-                alpha = MathHelper.Clamp(alpha + pulse, 0f, 1f);
+                // 0..1 phase
+                lowPhase = 0.5f + 0.5f * (float)System.Math.Sin(Main.GlobalTimeWrappedHourly * 8f);
+
+                // Stronger alpha pulse (0..0.18)
+                alpha = MathHelper.Clamp(alpha + 0.2f * lowPhase, 0f, 1f);
+
+                // Use same phase to slightly boost glow pass if enabled
+                lowGlowBoost = lowPhase;
             }
 
             // Color uses the existing hit color option for consistency
@@ -74,6 +87,12 @@ namespace ShieldMod.Layers
             // Scale bubble to roughly fit the player sprite
             float target = System.Math.Max(p.width, p.height) * 1.50f;
             float scale = target / tex.Width;
+
+            // Scale pulse when low shield (max +6%)
+            if (isLowShield)
+            {
+                scale *= 1f + 0.03f * lowPhase;
+            }
 
             // Small bob so it feels "alive"
             if (cfg.BubbleShieldBob)
@@ -97,7 +116,17 @@ namespace ShieldMod.Layers
             if (cfg.BubbleShieldDoubleDraw)
             {
                 DrawData dd2 = dd;
-                dd2.color = cfg.ShieldHitColor * (alpha * 0.35f);
+
+                // Base glow strength
+                float glowAlpha = alpha * 0.35f;
+
+                // If low shield, boost glow a bit (up to +0.15 * alpha)
+                if (isLowShield)
+                {
+                    glowAlpha += alpha * (0.15f * lowGlowBoost);
+                }
+
+                dd2.color = cfg.ShieldHitColor * MathHelper.Clamp(glowAlpha, 0f, 1f);
                 drawInfo.DrawDataCache.Add(dd2);
             }
 
